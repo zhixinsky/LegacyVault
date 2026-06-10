@@ -27,6 +27,12 @@ RUN pnpm --filter @vaultpass/types build \
  && pnpm --filter @vaultpass/ui build \
  && pnpm --filter @vaultpass/web build \
  && pnpm --filter @vaultpass/api exec prisma generate \
+ && cd apps/api \
+ && node ../../node_modules/prisma/build/index.js migrate diff \
+      --from-empty \
+      --to-schema-datamodel prisma/schema.prisma \
+      --script > prisma/init.sql \
+ && cd ../.. \
  && pnpm --filter @vaultpass/api build
 
 RUN mkdir -p apps/api/public && cp -r apps/web/dist/. apps/api/public/
@@ -37,8 +43,11 @@ WORKDIR /app
 ENV NODE_ENV=production
 ENV API_PORT=80
 ENV AUTO_MIGRATE=true
+ENV CI=true
 
-RUN addgroup -S vaultpass && adduser -S vaultpass -G vaultpass
+RUN apk add --no-cache openssl \
+ && addgroup -S vaultpass \
+ && adduser -S vaultpass -G vaultpass
 
 # pnpm 单体仓库：需保留根 node_modules、workspace packages、api 子包 node_modules
 COPY --from=build /app/node_modules ./node_modules

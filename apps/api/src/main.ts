@@ -1,5 +1,6 @@
 import './prisma/ensure-database-url';
 import { prepareDatabase } from './prisma/prepare-database';
+import { startStartupProbeServer, stopStartupProbeServer } from './startup-probe-server';
 import { ValidationPipe } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { NestFactory } from '@nestjs/core';
@@ -10,7 +11,14 @@ import type { NextFunction, Request, Response } from 'express';
 import { AppModule } from './app.module';
 
 async function bootstrap() {
-  await prepareDatabase();
+  const port = Number(process.env.API_PORT ?? 80);
+  const probeServer = await startStartupProbeServer(port);
+
+  try {
+    await prepareDatabase();
+  } finally {
+    await stopStartupProbeServer(probeServer);
+  }
 
   const app = await NestFactory.create<NestExpressApplication>(AppModule);
 
@@ -28,7 +36,7 @@ async function bootstrap() {
   });
 
   const config = app.get(ConfigService);
-  const port = Number(config.get<string>('API_PORT') ?? 80);
+  const listenPort = Number(config.get<string>('API_PORT') ?? port);
   const webRoot = config.get<string>('WEB_STATIC_PATH') || join(__dirname, '..', 'public');
   const webIndex = join(webRoot, 'index.html');
   const serveWeb = existsSync(webIndex);
@@ -50,13 +58,16 @@ async function bootstrap() {
     });
   }
 
-  await app.listen(port, '0.0.0.0');
+  await app.listen(listenPort, '0.0.0.0');
 
   const modes = ['API /api/v1'];
   if (serveWeb) {
     modes.push('PC Web /');
   }
-  console.log(`VaultPass listening on 0.0.0.0:${port} (${modes.join(', ')})`);
+  console.log(`VaultPass listening on 0.0.0.0:${listenPort} (${modes.join(', ')})`);
 }
 
-bootstrap();
+bootstrap().catch((error) => {
+  console.error('[fatal] 应用启动失败', error);
+  process.exit(1);
+});
