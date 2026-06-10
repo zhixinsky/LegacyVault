@@ -24,17 +24,47 @@ export class FileService {
   ) {}
 
   async getPublicCloudUrl(fileId: string | undefined, maxAgeInput?: string) {
-    if (!fileId?.startsWith('cloud://')) {
-      throw new BadRequestException('缺少有效的云存储 fileId');
-    }
+    const safeFileId = this.assertPublicCloudImageFileId(fileId);
 
     const parsedMaxAge = Number(maxAgeInput);
     const maxAge = Number.isFinite(parsedMaxAge)
       ? Math.min(Math.max(Math.floor(parsedMaxAge), 60), 3600)
       : 600;
-    const url = await this.storage.getTempFileUrl(fileId, maxAge);
+    const url = await this.storage.getTempFileUrl(safeFileId, maxAge);
 
     return { url, expiresIn: maxAge };
+  }
+
+  async getPublicCloudImage(fileId: string | undefined) {
+    const safeFileId = this.assertPublicCloudImageFileId(fileId);
+    const buffer = await this.storage.read(safeFileId);
+
+    return new StreamableFile(buffer, {
+      type: this.getImageContentType(safeFileId),
+      disposition: 'inline',
+    });
+  }
+
+  private assertPublicCloudImageFileId(fileId: string | undefined) {
+    const value = fileId?.trim();
+    if (!value?.startsWith('cloud://')) {
+      throw new BadRequestException('缺少有效的云存储 fileId');
+    }
+
+    if (!/\/img\/[^?#]+\.(webp|png|jpe?g|gif|svg)$/i.test(value)) {
+      throw new BadRequestException('仅允许访问公开图片资源');
+    }
+
+    return value;
+  }
+
+  private getImageContentType(fileId: string) {
+    if (/\.webp$/i.test(fileId)) return 'image/webp';
+    if (/\.png$/i.test(fileId)) return 'image/png';
+    if (/\.jpe?g$/i.test(fileId)) return 'image/jpeg';
+    if (/\.gif$/i.test(fileId)) return 'image/gif';
+    if (/\.svg$/i.test(fileId)) return 'image/svg+xml';
+    return 'application/octet-stream';
   }
 
   async list(userId: string, query: ListFilesQueryDto) {

@@ -1,8 +1,8 @@
 <script setup lang="ts">
-import { onMounted, ref } from 'vue';
+import { ref } from 'vue';
+import { API_BASE_URL } from '@/config';
 import { vaultSession } from '@/utils/api';
 import {
-  getCloudFileUrl,
   isAuthResult,
   loginWithCode,
   persistAuthResult,
@@ -19,7 +19,7 @@ const agreed = ref(false);
 const phoneFocused = ref(false);
 const heroBackgroundFileId =
   'cloud://prod-d4g8kpg7x92d55205.7072-prod-d4g8kpg7x92d55205-1441616383/img/bg.webp';
-const heroBackgroundUrl = ref('');
+const heroBackgroundUrl = `${API_BASE_URL}/files/cloud-image?fileId=${encodeURIComponent(heroBackgroundFileId)}`;
 
 let countdownTimer: ReturnType<typeof setInterval> | null = null;
 
@@ -165,20 +165,15 @@ function openLegal(type: 'user' | 'privacy') {
   });
 }
 
-onMounted(async () => {
-  try {
-    const result = await getCloudFileUrl(heroBackgroundFileId, 1800);
-    heroBackgroundUrl.value = result.url;
-  } catch {
-    heroBackgroundUrl.value = '';
-  }
-});
+function handleHeroImageError(error: unknown) {
+  console.warn('[login] 背景图加载失败', heroBackgroundUrl, error);
+}
 </script>
 
 <template>
   <view class="login-page">
     <view class="hero">
-      <image v-if="heroBackgroundUrl" class="hero-bg" :src="heroBackgroundUrl" mode="aspectFill" />
+      <image class="hero-bg" :src="heroBackgroundUrl" mode="aspectFill" @error="handleHeroImageError" />
       <view class="brand-copy">
         <view class="welcome-line">
           <view class="mini-shield" />

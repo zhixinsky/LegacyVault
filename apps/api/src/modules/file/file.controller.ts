@@ -34,6 +34,13 @@ export class FileController {
     return this.fileService.getPublicCloudUrl(fileId, maxAge);
   }
 
+  @Public()
+  @Get('cloud-image')
+  @SkipTransform()
+  getCloudImage(@Query('fileId') fileId: string) {
+    return this.fileService.getPublicCloudImage(fileId);
+  }
+
   @Get()
   list(@CurrentUser() user: AuthUser, @Query() query: ListFilesQueryDto) {
     return this.fileService.list(user.userId, query);
