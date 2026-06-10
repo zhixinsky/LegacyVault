@@ -43,7 +43,8 @@ ENV API_PORT=80
 ENV AUTO_MIGRATE=true
 ENV CI=true
 
-RUN apk add --no-cache openssl \
+RUN apk add --no-cache openssl libcap \
+ && setcap 'cap_net_bind_service=+ep' /usr/local/bin/node \
  && addgroup -S vaultpass \
  && adduser -S vaultpass -G vaultpass
 
