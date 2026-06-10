@@ -9,6 +9,9 @@ import {
   WX_CLOUD_SERVICE,
 } from '../config';
 
+const KEY_BUNDLE_STORAGE_KEY = 'vp_key_bundle';
+const RECOVERY_BUNDLE_STORAGE_KEY = 'vp_recovery_bundle';
+
 export function getDeviceId() {
   let deviceId = uni.getStorageSync(DEVICE_ID_STORAGE_KEY) as string;
   if (!deviceId) {
@@ -169,6 +172,8 @@ export function getToken() {
 
 export function clearToken() {
   uni.removeStorageSync(TOKEN_STORAGE_KEY);
+  uni.removeStorageSync(KEY_BUNDLE_STORAGE_KEY);
+  uni.removeStorageSync(RECOVERY_BUNDLE_STORAGE_KEY);
 }
 
 /** vault_key 仅保存在内存，禁止写入 localStorage */
@@ -204,17 +209,42 @@ export const vaultSession = {
 
   setKeyBundle(bundle: EncryptedVaultKeyBundle) {
     keyBundleMemory = bundle;
+    uni.setStorageSync(KEY_BUNDLE_STORAGE_KEY, JSON.stringify(bundle));
   },
 
   getKeyBundle() {
+    if (keyBundleMemory) {
+      return keyBundleMemory;
+    }
+
+    const stored = uni.getStorageSync(KEY_BUNDLE_STORAGE_KEY) as string;
+    if (!stored) {
+      return null;
+    }
+
+    try {
+      const parsed = JSON.parse(stored) as EncryptedVaultKeyBundle;
+      if (parsed.encryptedVaultKey && parsed.kdfSalt && parsed.kdfParams) {
+        keyBundleMemory = parsed;
+        return keyBundleMemory;
+      }
+    } catch {
+      uni.removeStorageSync(KEY_BUNDLE_STORAGE_KEY);
+    }
+
     return keyBundleMemory;
   },
 
   setRecoveryBundle(encryptedVaultKeyByRecovery: string) {
     recoveryBundleMemory = encryptedVaultKeyByRecovery;
+    uni.setStorageSync(RECOVERY_BUNDLE_STORAGE_KEY, encryptedVaultKeyByRecovery);
   },
 
   getRecoveryBundle() {
+    if (recoveryBundleMemory) {
+      return recoveryBundleMemory;
+    }
+    recoveryBundleMemory = (uni.getStorageSync(RECOVERY_BUNDLE_STORAGE_KEY) as string) || null;
     return recoveryBundleMemory;
   },
 

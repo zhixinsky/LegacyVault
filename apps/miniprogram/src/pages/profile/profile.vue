@@ -74,7 +74,7 @@ async function handleSave() {
 }
 
 function goSecurity() {
-  uni.navigateTo({ url: '/pages/security/security' });
+  uni.switchTab({ url: '/pages/security/security' });
 }
 </script>
 

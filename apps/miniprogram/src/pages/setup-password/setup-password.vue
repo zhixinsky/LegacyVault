@@ -88,7 +88,7 @@ async function handleSubmit() {
 
     masterPassword.value = '';
     confirmPassword.value = '';
-    uni.reLaunch({ url: '/pages/vault/vault' });
+    uni.switchTab({ url: '/pages/index/index' });
   } catch (error) {
     const message = error instanceof Error ? error.message : '操作失败';
     if (mode.value === 'register' && /已注册|已绑定/.test(message)) {

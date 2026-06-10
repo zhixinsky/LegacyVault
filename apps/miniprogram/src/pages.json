@@ -2,7 +2,11 @@
   "pages": [
     {
       "path": "pages/index/index",
-      "style": { "navigationBarTitleText": "VaultPass" }
+      "style": {
+        "navigationBarTitleText": "LegacyVault",
+        "navigationBarBackgroundColor": "#F6F8FC",
+        "navigationBarTextStyle": "black"
+      }
     },
     {
       "path": "pages/login/login",
@@ -118,5 +122,33 @@
     "navigationBarTitleText": "VaultPass",
     "navigationBarBackgroundColor": "#ffffff",
     "backgroundColor": "#f8fafc"
+  },
+  "tabBar": {
+    "color": "#7A879A",
+    "selectedColor": "#1E4DFF",
+    "backgroundColor": "#FFFFFF",
+    "borderStyle": "white",
+    "list": [
+      {
+        "pagePath": "pages/index/index",
+        "text": "首页"
+      },
+      {
+        "pagePath": "pages/vault/vault",
+        "text": "保险箱"
+      },
+      {
+        "pagePath": "pages/albums/albums",
+        "text": "相册"
+      },
+      {
+        "pagePath": "pages/security/security",
+        "text": "安全"
+      },
+      {
+        "pagePath": "pages/profile/profile",
+        "text": "我的"
+      }
+    ]
   }
 }
