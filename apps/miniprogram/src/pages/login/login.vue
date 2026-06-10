@@ -1,6 +1,5 @@
 <script setup lang="ts">
 import { ref } from 'vue';
-import { API_BASE_URL } from '@/config';
 import { vaultSession } from '@/utils/api';
 import {
   isAuthResult,
@@ -17,9 +16,8 @@ const sendingCode = ref(false);
 const countdown = ref(0);
 const agreed = ref(false);
 const phoneFocused = ref(false);
-const heroBackgroundFileId =
+const heroBackgroundUrl =
   'cloud://prod-d4g8kpg7x92d55205.7072-prod-d4g8kpg7x92d55205-1441616383/img/bg.webp';
-const heroBackgroundUrl = `${API_BASE_URL}/files/cloud-image?fileId=${encodeURIComponent(heroBackgroundFileId)}`;
 
 let countdownTimer: ReturnType<typeof setInterval> | null = null;
 
