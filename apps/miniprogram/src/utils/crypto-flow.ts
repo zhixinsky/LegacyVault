@@ -1,5 +1,6 @@
 import { sha256 } from '@noble/hashes/sha2';
 import {
+  AES_KEY_LENGTH,
   base64ToBytes,
   bytesToBase64,
   decryptJson,
@@ -8,18 +9,17 @@ import {
   encryptFile,
   encryptJson,
   encryptVaultKey,
-  generateFileKey,
-  generateVaultKey,
   hashChallengeAnswer,
   normalizeChallengeAnswer,
+  randomBytesAsync,
 } from '@vaultpass/crypto';
 import { DEFAULT_KDF_PARAMS } from '@vaultpass/crypto';
 import type { FileMetadata } from '@vaultpass/types';
 import { vaultSession } from './api';
 
 export async function registerWithMasterPassword(phone: string, masterPassword: string) {
-  const derived = deriveMasterKeyByPassword(masterPassword);
-  const vaultKey = generateVaultKey();
+  const derived = deriveMasterKeyByPassword(masterPassword, await randomBytesAsync(16));
+  const vaultKey = await randomBytesAsync(AES_KEY_LENGTH);
   const encryptedVaultKey = await encryptVaultKey(vaultKey, derived.masterKey);
 
   return {
@@ -112,7 +112,7 @@ export async function prepareEncryptedUpload(
   const resolvedMime = mimeType || guessMimeTypeFromPath(filePath);
 
   const fileData = await readFileAsUint8Array(filePath);
-  const fileKey = generateFileKey();
+  const fileKey = await randomBytesAsync(AES_KEY_LENGTH);
   const encryptedContent = await encryptFile(fileData, fileKey);
   const encryptedFileKey = await encryptJson({ key: bytesToBase64(fileKey) }, vaultKey);
   const encryptedBytes = new TextEncoder().encode(encryptedContent);

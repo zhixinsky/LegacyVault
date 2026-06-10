@@ -1,6 +1,7 @@
+import { gcm } from '@noble/ciphers/aes.js';
 import { AES_KEY_LENGTH, GCM_IV_LENGTH } from '../constants.js';
 import type { EncryptedBinary } from '../types.js';
-import { randomBytes } from '../utils/encoding.js';
+import { randomBytesAsync } from '../utils/encoding.js';
 
 function asBufferSource(bytes: Uint8Array): ArrayBuffer {
   return bytes.buffer.slice(bytes.byteOffset, bytes.byteOffset + bytes.byteLength) as ArrayBuffer;
@@ -11,7 +12,12 @@ async function importAesKey(rawKey: Uint8Array, usages: KeyUsage[]): Promise<Cry
     throw new Error(`AES-256 key must be ${AES_KEY_LENGTH} bytes`);
   }
 
-  return crypto.subtle.importKey(
+  const subtle = globalThis.crypto?.subtle;
+  if (!subtle) {
+    throw new Error('WebCrypto subtle API is not available');
+  }
+
+  return subtle.importKey(
     'raw',
     asBufferSource(rawKey),
     { name: 'AES-GCM' },
@@ -25,10 +31,19 @@ async function importAesKey(rawKey: Uint8Array, usages: KeyUsage[]): Promise<Cry
  * 每次调用生成独立随机 IV，禁止复用。
  */
 export async function encryptBytes(plaintext: Uint8Array, key: Uint8Array): Promise<EncryptedBinary> {
-  const iv = randomBytes(GCM_IV_LENGTH);
+  const iv = await randomBytesAsync(GCM_IV_LENGTH);
+  const subtle = globalThis.crypto?.subtle;
+
+  if (!subtle) {
+    return {
+      iv,
+      ciphertext: gcm(key, iv).encrypt(plaintext),
+    };
+  }
+
   const cryptoKey = await importAesKey(key, ['encrypt']);
   const ciphertext = new Uint8Array(
-    await crypto.subtle.encrypt(
+    await subtle.encrypt(
       { name: 'AES-GCM', iv: asBufferSource(iv) },
       cryptoKey,
       asBufferSource(plaintext),
@@ -40,10 +55,19 @@ export async function encryptBytes(plaintext: Uint8Array, key: Uint8Array): Prom
 
 /** 使用 AES-256-GCM 解密字节 */
 export async function decryptBytes(payload: EncryptedBinary, key: Uint8Array): Promise<Uint8Array> {
-  const cryptoKey = await importAesKey(key, ['decrypt']);
+  const subtle = globalThis.crypto?.subtle;
 
+  if (!subtle) {
+    try {
+      return gcm(key, payload.iv).decrypt(payload.ciphertext);
+    } catch {
+      throw new Error('Decryption failed: invalid key or corrupted ciphertext');
+    }
+  }
+
+  const cryptoKey = await importAesKey(key, ['decrypt']);
   try {
-    const plaintext = await crypto.subtle.decrypt(
+    const plaintext = await subtle.decrypt(
       { name: 'AES-GCM', iv: asBufferSource(payload.iv) },
       cryptoKey,
       asBufferSource(payload.ciphertext),

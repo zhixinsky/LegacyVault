@@ -22,6 +22,7 @@ export {
   base64ToBytes,
   bytesToBase64,
   randomBytes,
+  randomBytesAsync,
   timingSafeEqual,
   zeroize,
 } from './utils/encoding.js';

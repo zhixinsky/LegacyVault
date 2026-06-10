@@ -90,8 +90,21 @@ async function handleSubmit() {
     confirmPassword.value = '';
     uni.reLaunch({ url: '/pages/vault/vault' });
   } catch (error) {
+    const message = error instanceof Error ? error.message : '操作失败';
+    if (mode.value === 'register' && /已注册|已绑定/.test(message)) {
+      uni.showModal({
+        title: '账号已存在',
+        content: `${message}，请返回登录后解锁保险箱。`,
+        showCancel: false,
+        success: () => {
+          uni.reLaunch({ url: '/pages/login/login' });
+        },
+      });
+      return;
+    }
+
     uni.showToast({
-      title: error instanceof Error ? error.message : '操作失败',
+      title: message,
       icon: 'none',
     });
   } finally {
