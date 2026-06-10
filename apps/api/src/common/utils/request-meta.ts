@@ -1,5 +1,7 @@
 import { Request } from 'express';
 
+const AUDIT_STRING_LIMIT = 191;
+
 export function getRequestMeta(req: Request) {
   const forwarded = req.headers['x-forwarded-for'];
   const ip =
@@ -14,8 +16,15 @@ export function getRequestMeta(req: Request) {
       : undefined;
 
   return {
-    ip: ip ?? undefined,
-    device: typeof req.headers['user-agent'] === 'string' ? req.headers['user-agent'] : undefined,
+    ip: truncate(ip ?? undefined, AUDIT_STRING_LIMIT),
+    device: truncate(
+      typeof req.headers['user-agent'] === 'string' ? req.headers['user-agent'] : undefined,
+      AUDIT_STRING_LIMIT,
+    ),
     deviceId,
   };
+}
+
+function truncate(value: string | undefined, maxLength: number) {
+  return value && value.length > maxLength ? value.slice(0, maxLength) : value;
 }

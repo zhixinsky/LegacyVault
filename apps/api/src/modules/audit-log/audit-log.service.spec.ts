@@ -44,4 +44,16 @@ describe('AuditLogService', () => {
     const payload = prisma.auditLog.create.mock.calls[0][0].data;
     expect(JSON.stringify(payload)).not.toMatch(/password/i);
   });
+
+  it('truncates long device strings to fit MySQL default varchar length', async () => {
+    prisma.auditLog.create.mockResolvedValue({ id: 'log-1' });
+
+    await service.log({
+      action: 'auth.login.sms',
+      device: 'x'.repeat(300),
+    });
+
+    const payload = prisma.auditLog.create.mock.calls[0][0].data;
+    expect(payload.device).toHaveLength(191);
+  });
 });

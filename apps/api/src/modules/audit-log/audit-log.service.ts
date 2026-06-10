@@ -2,6 +2,8 @@ import { Injectable } from '@nestjs/common';
 import { AuditActorType, AuditRiskLevel, Prisma } from '@prisma/client';
 import { PrismaService } from '../../prisma/prisma.service';
 
+const DEFAULT_MYSQL_STRING_LIMIT = 191;
+
 export interface AuditLogInput {
   userId?: string;
   actorType?: AuditActorType;
@@ -18,11 +20,11 @@ export class AuditLogService {
 
   async log(input: AuditLogInput) {
     const data: Prisma.AuditLogCreateInput = {
-      action: input.action,
+      action: truncate(input.action, DEFAULT_MYSQL_STRING_LIMIT),
       actorType: input.actorType ?? AuditActorType.user,
-      actorId: input.actorId,
-      ip: input.ip,
-      device: input.device,
+      actorId: truncateOptional(input.actorId, DEFAULT_MYSQL_STRING_LIMIT),
+      ip: truncateOptional(input.ip, DEFAULT_MYSQL_STRING_LIMIT),
+      device: truncateOptional(input.device, DEFAULT_MYSQL_STRING_LIMIT),
       riskLevel: input.riskLevel ?? AuditRiskLevel.low,
     };
 
@@ -30,7 +32,12 @@ export class AuditLogService {
       data.user = { connect: { id: input.userId } };
     }
 
-    return this.prisma.auditLog.create({ data });
+    try {
+      return await this.prisma.auditLog.create({ data });
+    } catch (error) {
+      console.warn('[audit-log] 审计日志写入失败，已忽略', error);
+      return null;
+    }
   }
 
   async listForUser(userId: string, skip: number, take: number) {
@@ -73,4 +80,12 @@ export class AuditLogService {
 
     return { items, total };
   }
+}
+
+function truncate(value: string, maxLength: number) {
+  return value.length > maxLength ? value.slice(0, maxLength) : value;
+}
+
+function truncateOptional(value: string | undefined, maxLength: number) {
+  return value ? truncate(value, maxLength) : undefined;
 }
