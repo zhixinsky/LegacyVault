@@ -61,7 +61,20 @@ async function main() {
   const env = loadEnvFile();
   const checks: CheckResult[] = [];
 
-  addConfigCheck(checks, env, '数据库 DATABASE_URL', ['DATABASE_URL']);
+  const hasDatabase =
+    hasValue(env, 'DATABASE_URL') ||
+    (hasValue(env, 'MYSQL_ADDRESS') &&
+      hasValue(env, 'MYSQL_USERNAME') &&
+      hasValue(env, 'MYSQL_PASSWORD'));
+  checks.push({
+    name: '数据库（DATABASE_URL 或 MYSQL_*）',
+    pass: hasDatabase,
+    detail: hasDatabase
+      ? hasValue(env, 'DATABASE_URL')
+        ? '已配置 DATABASE_URL'
+        : '将使用 MYSQL_ADDRESS / MYSQL_USERNAME / MYSQL_PASSWORD 自动拼接'
+      : '缺少 DATABASE_URL 或 MYSQL_ADDRESS+MYSQL_USERNAME+MYSQL_PASSWORD',
+  });
   addConfigCheck(checks, env, 'JWT_SECRET', ['JWT_SECRET']);
   addConfigCheck(checks, env, '微信开放接口 WX_USE_OPENAPI', ['WX_USE_OPENAPI', 'WX_APPID']);
   addConfigCheck(checks, env, '云托管 COS', ['TCB_ENV_ID', 'COS_BUCKET', 'COS_REGION']);
