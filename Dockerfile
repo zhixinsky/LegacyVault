@@ -27,12 +27,10 @@ RUN pnpm --filter @vaultpass/types build \
  && pnpm --filter @vaultpass/ui build \
  && pnpm --filter @vaultpass/web build \
  && pnpm --filter @vaultpass/api exec prisma generate \
- && cd apps/api \
- && node ../../node_modules/prisma/build/index.js migrate diff \
+ && pnpm --filter @vaultpass/api exec prisma migrate diff \
       --from-empty \
       --to-schema-datamodel prisma/schema.prisma \
-      --script > prisma/init.sql \
- && cd ../.. \
+      --script > apps/api/prisma/init.sql \
  && pnpm --filter @vaultpass/api build
 
 RUN mkdir -p apps/api/public && cp -r apps/web/dist/. apps/api/public/
