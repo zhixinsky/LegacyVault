@@ -36,6 +36,7 @@ WORKDIR /app
 
 ENV NODE_ENV=production
 ENV API_PORT=80
+ENV AUTO_MIGRATE=true
 
 RUN addgroup -S vaultpass && adduser -S vaultpass -G vaultpass
 
