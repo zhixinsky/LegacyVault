@@ -170,17 +170,17 @@ function handleHeroImageError(error: unknown) {
 
 <template>
   <view class="login-page">
+    <image class="login-bg" :src="heroBackgroundUrl" mode="aspectFill" @error="handleHeroImageError" />
     <view class="hero">
-      <image class="hero-bg" :src="heroBackgroundUrl" mode="aspectFill" @error="handleHeroImageError" />
       <view class="brand-copy">
         <view class="welcome-line">
-          <view class="mini-shield" />
+          <image class="inline-icon mini-shield" src="/static/icons/login/shield.svg" mode="aspectFit" />
           <text>Welcome to</text>
         </view>
         <text class="brand-title">LegacyVault</text>
         <text class="brand-subtitle">您的数字保险箱</text>
         <view class="security-line">
-          <view class="lock-icon" />
+          <image class="inline-icon lock-icon" src="/static/icons/login/lock.svg" mode="aspectFit" />
           <text>端到端加密 · 只有您可以访问</text>
         </view>
       </view>
@@ -190,15 +190,12 @@ function handleHeroImageError(error: unknown) {
       <view class="quick-row">
         <!-- #ifdef MP-WEIXIN -->
         <button class="quick-btn wx-btn" :loading="loading" @tap="handleWxLogin">
-          <view class="wx-icon">
-            <view class="wx-bubble one" />
-            <view class="wx-bubble two" />
-          </view>
+          <image class="quick-icon" src="/static/icons/login/wechat.svg" mode="aspectFit" />
           <text>微信快捷登录</text>
         </button>
         <!-- #endif -->
         <button class="quick-btn phone-btn" @tap="focusPhoneInput">
-          <view class="phone-icon" />
+          <image class="quick-icon" src="/static/icons/login/phone.svg" mode="aspectFit" />
           <text>手机号快捷登录</text>
         </button>
       </view>
@@ -211,7 +208,7 @@ function handleHeroImageError(error: unknown) {
 
       <text class="field-label">手机号</text>
       <view class="input-wrap">
-        <view class="field-icon phone-field" />
+        <image class="field-icon" src="/static/icons/login/phone.svg" mode="aspectFit" />
         <input
           v-model="phone"
           class="field-input"
@@ -227,7 +224,7 @@ function handleHeroImageError(error: unknown) {
       <text class="field-label">验证码</text>
       <view class="code-row">
         <view class="input-wrap code-input">
-          <view class="field-icon code-field" />
+          <image class="field-icon" src="/static/icons/login/lock.svg" mode="aspectFit" />
           <input
             v-model="code"
             class="field-input"
@@ -260,28 +257,28 @@ function handleHeroImageError(error: unknown) {
         :loading="loading"
         @tap="goLogin"
       >
-        <view class="button-shield" />
+        <image class="button-icon login-icon" src="/static/icons/login/login.svg" mode="aspectFit" />
         <text>登录</text>
       </button>
 
       <button class="register-btn" @tap="goRegister">
-        <view class="register-icon" />
+        <image class="button-icon" src="/static/icons/login/register.svg" mode="aspectFit" />
         <text>注册新账户</text>
       </button>
 
       <view class="security-points">
         <view class="point">
-          <view class="point-icon shield" />
+          <image class="point-icon" src="/static/icons/login/data-encryption.svg" mode="aspectFit" />
           <text class="point-title">数据加密存储</text>
           <text class="point-desc">银行级安全保障</text>
         </view>
         <view class="point">
-          <view class="point-icon private" />
+          <image class="point-icon" src="/static/icons/login/private-control.svg" mode="aspectFit" />
           <text class="point-title">完全私密控制</text>
           <text class="point-desc">只有您可以访问</text>
         </view>
         <view class="point">
-          <view class="point-icon backup" />
+          <image class="point-icon" src="/static/icons/login/backup.svg" mode="aspectFit" />
           <text class="point-title">多重备份保护</text>
           <text class="point-desc">永不丢失您的数据</text>
         </view>
@@ -296,31 +293,31 @@ function handleHeroImageError(error: unknown) {
 @import '@/uni.scss';
 
 .login-page {
+  position: relative;
   min-height: 100vh;
   padding: 96rpx 32rpx 36rpx;
   background: linear-gradient(180deg, #f7fbff 0%, #eef5ff 100%);
   box-sizing: border-box;
+  overflow: hidden;
+}
+
+.login-bg {
+  position: fixed;
+  left: 0;
+  top: 0;
+  width: 100vw;
+  height: 100vh;
+  z-index: 0;
 }
 
 .hero {
   position: relative;
+  z-index: 1;
   display: flex;
   justify-content: space-between;
   align-items: center;
   min-height: 280rpx;
   padding: 0 12rpx 24rpx;
-  overflow: hidden;
-}
-
-.hero-bg {
-  position: absolute;
-  top: -34rpx;
-  right: -52rpx;
-  width: 420rpx;
-  height: 300rpx;
-  opacity: 0.98;
-  z-index: 0;
-  pointer-events: none;
 }
 
 .brand-copy {
@@ -343,19 +340,14 @@ function handleHeroImageError(error: unknown) {
   font-weight: 600;
 }
 
-.mini-shield,
-.lock-icon,
-.button-shield {
-  position: relative;
-  box-sizing: border-box;
+.inline-icon {
+  display: block;
+  flex-shrink: 0;
 }
 
 .mini-shield {
-  width: 22rpx;
-  height: 26rpx;
-  border: 3rpx solid #2f7df4;
-  border-radius: 12rpx 12rpx 14rpx 14rpx;
-  background: rgba(47, 125, 244, 0.12);
+  width: 28rpx;
+  height: 28rpx;
 }
 
 .brand-title {
@@ -384,24 +376,12 @@ function handleHeroImageError(error: unknown) {
 
 .lock-icon {
   width: 24rpx;
-  height: 20rpx;
-  border: 3rpx solid #3b82f6;
-  border-radius: 5rpx;
-}
-
-.lock-icon::before {
-  content: '';
-  position: absolute;
-  left: 4rpx;
-  top: -13rpx;
-  width: 12rpx;
-  height: 13rpx;
-  border: 3rpx solid #3b82f6;
-  border-bottom: 0;
-  border-radius: 12rpx 12rpx 0 0;
+  height: 24rpx;
 }
 
 .login-card {
+  position: relative;
+  z-index: 1;
   width: 100%;
   padding: 48rpx 36rpx 34rpx;
   border-radius: 48rpx;
@@ -449,39 +429,11 @@ button::after {
   border: 1rpx solid #d6e4ff;
 }
 
-.wx-icon {
-  position: relative;
-  width: 38rpx;
-  height: 32rpx;
-}
-
-.wx-bubble {
-  position: absolute;
-  border-radius: 50%;
-  background: #fff;
-}
-
-.wx-bubble.one {
-  left: 0;
-  top: 4rpx;
-  width: 24rpx;
-  height: 20rpx;
-}
-
-.wx-bubble.two {
-  right: 0;
-  top: 10rpx;
-  width: 22rpx;
-  height: 18rpx;
-  opacity: 0.9;
-}
-
-.phone-icon {
-  width: 24rpx;
-  height: 38rpx;
-  border: 4rpx solid #1e4dff;
-  border-radius: 8rpx;
-  box-sizing: border-box;
+.quick-icon {
+  display: block;
+  width: 36rpx;
+  height: 36rpx;
+  flex-shrink: 0;
 }
 
 .divider {
@@ -522,36 +474,11 @@ button::after {
 }
 
 .field-icon {
-  position: relative;
   width: 32rpx;
   height: 32rpx;
   margin-right: 18rpx;
-  color: #b2bdcc;
-  box-sizing: border-box;
-}
-
-.phone-field {
-  width: 24rpx;
-  height: 36rpx;
-  border: 3rpx solid currentColor;
-  border-radius: 7rpx;
-}
-
-.code-field {
-  border: 3rpx solid currentColor;
-  border-radius: 8rpx;
-}
-
-.code-field::after {
-  content: '';
-  position: absolute;
-  left: 8rpx;
-  top: 6rpx;
-  width: 10rpx;
-  height: 16rpx;
-  border-right: 3rpx solid currentColor;
-  border-bottom: 3rpx solid currentColor;
-  transform: rotate(40deg);
+  flex-shrink: 0;
+  opacity: 0.72;
 }
 
 .field-input {
@@ -656,11 +583,18 @@ button::after {
   box-shadow: none;
 }
 
-.button-shield {
-  width: 30rpx;
-  height: 34rpx;
-  border: 4rpx solid #fff;
-  border-radius: 16rpx 16rpx 18rpx 18rpx;
+.button-icon {
+  display: block;
+  width: 36rpx;
+  height: 36rpx;
+  flex-shrink: 0;
+}
+
+.login-icon {
+  padding: 4rpx;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.96);
+  box-sizing: border-box;
 }
 
 .register-btn {
@@ -668,24 +602,6 @@ button::after {
   color: #1e4dff;
   background: #fff;
   border: 1rpx solid #b8c8ff;
-}
-
-.register-icon {
-  position: relative;
-  width: 30rpx;
-  height: 30rpx;
-  border: 3rpx solid #1e4dff;
-  border-radius: 50%;
-}
-
-.register-icon::after {
-  content: '+';
-  position: absolute;
-  right: -16rpx;
-  bottom: -10rpx;
-  font-size: 28rpx;
-  line-height: 1;
-  color: #1e4dff;
 }
 
 .security-points {
@@ -709,67 +625,10 @@ button::after {
 }
 
 .point-icon {
-  position: relative;
-  width: 56rpx;
-  height: 56rpx;
+  display: block;
+  width: 58rpx;
+  height: 58rpx;
   margin: 0 auto 18rpx;
-  border-radius: 50%;
-  background: #eef3ff;
-  color: #1e4dff;
-}
-
-.point-icon.shield::after {
-  content: '';
-  position: absolute;
-  left: 18rpx;
-  top: 13rpx;
-  width: 20rpx;
-  height: 24rpx;
-  border: 3rpx solid currentColor;
-  border-radius: 10rpx 10rpx 12rpx 12rpx;
-}
-
-.point-icon.private {
-  background: #eafaf1;
-  color: #05a84f;
-}
-
-.point-icon.private::before {
-  content: '';
-  position: absolute;
-  left: 19rpx;
-  top: 13rpx;
-  width: 18rpx;
-  height: 18rpx;
-  border: 3rpx solid currentColor;
-  border-radius: 50%;
-}
-
-.point-icon.private::after {
-  content: '';
-  position: absolute;
-  left: 15rpx;
-  bottom: 11rpx;
-  width: 26rpx;
-  height: 14rpx;
-  border: 3rpx solid currentColor;
-  border-radius: 18rpx 18rpx 8rpx 8rpx;
-}
-
-.point-icon.backup {
-  background: #f4ecff;
-  color: #7c3aed;
-}
-
-.point-icon.backup::after {
-  content: '';
-  position: absolute;
-  left: 14rpx;
-  top: 18rpx;
-  width: 28rpx;
-  height: 18rpx;
-  border: 3rpx solid currentColor;
-  border-radius: 14rpx;
 }
 
 .point-title {
@@ -788,6 +647,8 @@ button::after {
 }
 
 .copyright {
+  position: relative;
+  z-index: 1;
   display: block;
   margin-top: 34rpx;
   text-align: center;
