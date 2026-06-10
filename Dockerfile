@@ -16,6 +16,7 @@ COPY packages/ui/package.json packages/ui/
 RUN pnpm install --frozen-lockfile
 
 FROM deps AS build
+COPY tsconfig.base.json ./
 COPY packages ./packages
 COPY apps/api ./apps/api
 COPY apps/web ./apps/web
