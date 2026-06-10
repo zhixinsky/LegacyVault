@@ -78,11 +78,25 @@ export class WechatCosService {
       throw new Error('非云存储 file_id，无法从 COS 读取');
     }
 
+    const downloadUrl = await this.getTempFileUrl(storagePath, 600);
+    const response = await fetch(downloadUrl);
+    if (!response.ok) {
+      throw new Error(`COS 下载失败 HTTP ${response.status}`);
+    }
+
+    return Buffer.from(await response.arrayBuffer());
+  }
+
+  async getTempFileUrl(fileId: string, maxAge = 600): Promise<string> {
+    if (!fileId.startsWith('cloud://')) {
+      throw new Error('非云存储 file_id，无法获取临时访问地址');
+    }
+
     const data = await this.requestTcb<{ file_list?: TcbDownloadRow[] }>(
       '/tcb/batchdownloadfile',
       {
         env: this.getEnvId(),
-        file_list: [{ fileid: storagePath, max_age: 600 }],
+        file_list: [{ fileid: fileId, max_age: maxAge }],
       },
     );
 
@@ -92,12 +106,7 @@ export class WechatCosService {
       throw new Error(row?.errmsg || 'COS 下载地址获取失败');
     }
 
-    const response = await fetch(downloadUrl);
-    if (!response.ok) {
-      throw new Error(`COS 下载失败 HTTP ${response.status}`);
-    }
-
-    return Buffer.from(await response.arrayBuffer());
+    return downloadUrl;
   }
 
   async remove(storagePath: string) {

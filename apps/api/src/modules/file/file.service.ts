@@ -23,6 +23,20 @@ export class FileService {
     private readonly mfaService: MfaService,
   ) {}
 
+  async getPublicCloudUrl(fileId: string | undefined, maxAgeInput?: string) {
+    if (!fileId?.startsWith('cloud://')) {
+      throw new BadRequestException('缺少有效的云存储 fileId');
+    }
+
+    const parsedMaxAge = Number(maxAgeInput);
+    const maxAge = Number.isFinite(parsedMaxAge)
+      ? Math.min(Math.max(Math.floor(parsedMaxAge), 60), 3600)
+      : 600;
+    const url = await this.storage.getTempFileUrl(fileId, maxAge);
+
+    return { url, expiresIn: maxAge };
+  }
+
   async list(userId: string, query: ListFilesQueryDto) {
     const { page, pageSize, skip, take } = getPagination(query.page, query.pageSize);
     const where = {

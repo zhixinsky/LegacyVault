@@ -10,7 +10,11 @@
     },
     {
       "path": "pages/login/login",
-      "style": { "navigationBarTitleText": "登录" }
+      "style": {
+        "navigationStyle": "custom",
+        "navigationBarBackgroundColor": "#F7FBFF",
+        "navigationBarTextStyle": "black"
+      }
     },
     {
       "path": "pages/scan-login/scan-login",

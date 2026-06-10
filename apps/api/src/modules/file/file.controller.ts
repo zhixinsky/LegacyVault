@@ -17,6 +17,7 @@ import { Request } from 'express';
 import { memoryStorage } from 'multer';
 import { AuthUser, CurrentUser } from '../../common/decorators/current-user.decorator';
 import { MfaCode } from '../../common/decorators/mfa-code.decorator';
+import { Public } from '../../common/decorators/metadata.decorator';
 import { SkipTransform } from '../../common/decorators/skip-transform.decorator';
 import { getRequestMeta } from '../../common/utils/request-meta';
 import { ListFilesQueryDto, RegisterFileDto } from './dto/file.dto';
@@ -26,6 +27,12 @@ import { FileService } from './file.service';
 @Controller('files')
 export class FileController {
   constructor(private readonly fileService: FileService) {}
+
+  @Public()
+  @Get('cloud-url')
+  getCloudUrl(@Query('fileId') fileId: string, @Query('maxAge') maxAge?: string) {
+    return this.fileService.getPublicCloudUrl(fileId, maxAge);
+  }
 
   @Get()
   list(@CurrentUser() user: AuthUser, @Query() query: ListFilesQueryDto) {

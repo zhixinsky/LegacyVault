@@ -116,6 +116,13 @@ export function heartbeat() {
   });
 }
 
+export function getCloudFileUrl(fileId: string, maxAge = 600) {
+  return request<{ url: string; expiresIn: number }>({
+    url: `/files/cloud-url?fileId=${encodeURIComponent(fileId)}&maxAge=${maxAge}`,
+    auth: false,
+  });
+}
+
 export interface VaultItem {
   id: string;
   type: string;
