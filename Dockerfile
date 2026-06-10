@@ -39,14 +39,17 @@ ENV API_PORT=80
 
 RUN addgroup -S vaultpass && adduser -S vaultpass -G vaultpass
 
+# pnpm 单体仓库：需保留根 node_modules、workspace packages、api 子包 node_modules
 COPY --from=build /app/node_modules ./node_modules
-COPY --from=build /app/apps/api/dist ./dist
-COPY --from=build /app/apps/api/public ./public
-COPY --from=build /app/apps/api/prisma ./prisma
-COPY --from=build /app/apps/api/package.json ./package.json
 COPY --from=build /app/packages ./packages
+COPY --from=build /app/apps/api/dist ./apps/api/dist
+COPY --from=build /app/apps/api/public ./apps/api/public
+COPY --from=build /app/apps/api/prisma ./apps/api/prisma
+COPY --from=build /app/apps/api/package.json ./apps/api/package.json
+COPY --from=build /app/apps/api/node_modules ./apps/api/node_modules
 
 USER vaultpass
+WORKDIR /app/apps/api
 EXPOSE 80
 
 CMD ["node", "dist/main.js"]
