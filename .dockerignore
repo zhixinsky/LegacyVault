@@ -1,0 +1,16 @@
+node_modules
+**/node_modules
+**/dist
+.git
+.env
+.env.*
+!.env.example
+apps/miniprogram/dist
+apps/admin/dist
+**/*.md
+**/test
+**/*.spec.ts
+.cursor
+mcps
+agent-transcripts
+terminals

@@ -1,0 +1,28 @@
+{
+  "name": "vaultpass",
+  "version": "0.1.0",
+  "private": true,
+  "description": "零知识加密保险箱 + 数字遗产交接系统",
+  "scripts": {
+    "dev": "turbo run dev",
+    "dev:web": "turbo run dev --filter=@vaultpass/web",
+    "dev:admin": "turbo run dev --filter=@vaultpass/admin",
+    "dev:api": "turbo run dev --filter=@vaultpass/api",
+    "dev:miniprogram": "turbo run dev --filter=@vaultpass/miniprogram",
+    "build": "turbo run build",
+    "lint": "turbo run lint",
+    "test": "turbo run test",
+    "typecheck": "turbo run typecheck",
+    "db:generate": "pnpm --filter @vaultpass/api db:generate",
+    "db:migrate": "pnpm --filter @vaultpass/api db:migrate",
+    "db:push": "pnpm --filter @vaultpass/api db:push"
+  },
+  "devDependencies": {
+    "turbo": "^2.5.4",
+    "typescript": "^5.8.3"
+  },
+  "packageManager": "pnpm@10.28.0",
+  "engines": {
+    "node": ">=20"
+  }
+}

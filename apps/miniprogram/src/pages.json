@@ -1,0 +1,122 @@
+{
+  "pages": [
+    {
+      "path": "pages/index/index",
+      "style": { "navigationBarTitleText": "VaultPass" }
+    },
+    {
+      "path": "pages/login/login",
+      "style": { "navigationBarTitleText": "登录" }
+    },
+    {
+      "path": "pages/scan-login/scan-login",
+      "style": { "navigationBarTitleText": "扫码登录" }
+    },
+    {
+      "path": "pages/wx-bind-scan/wx-bind-scan",
+      "style": { "navigationBarTitleText": "绑定微信" }
+    },
+    {
+      "path": "pages/setup-password/setup-password",
+      "style": { "navigationBarTitleText": "设置主密码" }
+    },
+    {
+      "path": "pages/vault/vault",
+      "style": { "navigationBarTitleText": "保险箱" }
+    },
+    {
+      "path": "pages/password-create/password-create",
+      "style": { "navigationBarTitleText": "新增账号密码" }
+    },
+    {
+      "path": "pages/albums/albums",
+      "style": { "navigationBarTitleText": "私密相册" }
+    },
+    {
+      "path": "pages/upload-image/upload-image",
+      "style": { "navigationBarTitleText": "上传图片" }
+    },
+    {
+      "path": "pages/upload-video/upload-video",
+      "style": { "navigationBarTitleText": "上传视频" }
+    },
+    {
+      "path": "pages/album-detail/album-detail",
+      "style": { "navigationBarTitleText": "相册详情" }
+    },
+    {
+      "path": "pages/upload-file/upload-file",
+      "style": { "navigationBarTitleText": "上传文件" }
+    },
+    {
+      "path": "pages/trusted-contacts/trusted-contacts",
+      "style": { "navigationBarTitleText": "安全联系人" }
+    },
+    {
+      "path": "pages/inheritance/inheritance",
+      "style": { "navigationBarTitleText": "数字遗产" }
+    },
+    {
+      "path": "pages/security/security",
+      "style": { "navigationBarTitleText": "安全中心" }
+    },
+    {
+      "path": "pages/accounts-hub/accounts-hub",
+      "style": { "navigationBarTitleText": "敏感账户" }
+    },
+    {
+      "path": "pages/accounts/accounts",
+      "style": { "navigationBarTitleText": "敏感账户" }
+    },
+    {
+      "path": "pages/account-create/account-create",
+      "style": { "navigationBarTitleText": "新增账户" }
+    },
+    {
+      "path": "pages/login-history/login-history",
+      "style": { "navigationBarTitleText": "登录记录" }
+    },
+    {
+      "path": "pages/profile/profile",
+      "style": { "navigationBarTitleText": "个人资料" }
+    },
+    {
+      "path": "pages/export/export",
+      "style": { "navigationBarTitleText": "数据导出" }
+    },
+    {
+      "path": "pages/contact-takeover/contact-takeover",
+      "style": { "navigationBarTitleText": "联系人接管" }
+    },
+    {
+      "path": "pages/contact-vault/contact-vault",
+      "style": { "navigationBarTitleText": "联系人保险箱" }
+    },
+    {
+      "path": "pages/notes/notes",
+      "style": { "navigationBarTitleText": "私密笔记" }
+    },
+    {
+      "path": "pages/note-create/note-create",
+      "style": { "navigationBarTitleText": "新增笔记" }
+    },
+    {
+      "path": "pages/passwords/passwords",
+      "style": { "navigationBarTitleText": "账号密码" }
+    },
+    {
+      "path": "pages/recycle-bin/recycle-bin",
+      "style": { "navigationBarTitleText": "回收站" }
+    },
+    {
+      "path": "pages/search/search",
+      "style": { "navigationBarTitleText": "搜索" }
+    }
+  ],
+  "globalStyle": {
+    "navigationBarTextStyle": "black",
+    "navigationBarTitleText": "VaultPass",
+    "navigationBarBackgroundColor": "#ffffff",
+    "backgroundColor": "#f8fafc"
+  }
+}
