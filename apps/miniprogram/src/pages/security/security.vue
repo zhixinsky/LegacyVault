@@ -215,7 +215,7 @@ function handleLogout() {
 function lockVault() {
   vaultSession.clearVaultKey();
   uni.showToast({ title: '已锁定保险箱', icon: 'success' });
-  uni.reLaunch({ url: '/pages/setup-password/setup-password?mode=unlock' });
+  uni.reLaunch({ url: '/pages/unlock-vault/unlock-vault' });
 }
 </script>
 

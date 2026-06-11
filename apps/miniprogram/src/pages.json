@@ -25,10 +25,6 @@
       "style": { "navigationBarTitleText": "绑定微信" }
     },
     {
-      "path": "pages/setup-password/setup-password",
-      "style": { "navigationBarTitleText": "设置主密码" }
-    },
-    {
       "path": "pages/create-vault-password/create-vault-password",
       "style": {
         "navigationStyle": "custom",
@@ -46,6 +42,14 @@
     },
     {
       "path": "pages/recovery-key-confirm/recovery-key-confirm",
+      "style": {
+        "navigationStyle": "custom",
+        "navigationBarBackgroundColor": "#F7FBFF",
+        "navigationBarTextStyle": "black"
+      }
+    },
+    {
+      "path": "pages/unlock-vault/unlock-vault",
       "style": {
         "navigationStyle": "custom",
         "navigationBarBackgroundColor": "#F7FBFF",

@@ -119,7 +119,7 @@ function handleLoginResult(result: AuthLoginResponse) {
     uni.navigateTo({ url: '/pages/create-vault-password/create-vault-password' });
     return;
   }
-  uni.navigateTo({ url: '/pages/setup-password/setup-password?mode=unlock' });
+  uni.navigateTo({ url: '/pages/unlock-vault/unlock-vault' });
 }
 
 async function handleSendCode() {

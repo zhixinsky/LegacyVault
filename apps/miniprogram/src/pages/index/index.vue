@@ -56,6 +56,10 @@ const tools = [
 ];
 
 onShow(() => {
+  void guardAndLoad();
+});
+
+async function guardAndLoad() {
   const token = getToken();
   if (!token) {
     uni.reLaunch({ url: '/pages/login/login' });
@@ -63,12 +67,19 @@ onShow(() => {
   }
 
   if (!vaultSession.getVaultKey()) {
-    uni.reLaunch({ url: '/pages/setup-password/setup-password?mode=unlock' });
+    try {
+      const profile = await getProfile();
+      uni.reLaunch({
+        url: profile.hasVault ? '/pages/unlock-vault/unlock-vault' : '/pages/create-vault-password/create-vault-password',
+      });
+    } catch {
+      uni.reLaunch({ url: '/pages/login/login' });
+    }
     return;
   }
 
   void loadDashboard();
-});
+}
 
 async function loadDashboard() {
   loading.value = true;
