@@ -9,6 +9,7 @@ import {
   persistAuthResult,
   sendEmailLoginCode,
   sendLoginCode,
+  wechatPhoneLogin,
   wxLogin,
   type AuthLoginResponse,
 } from '@/utils/services';
@@ -257,10 +258,30 @@ async function handleWxLogin() {
   }
 }
 
-function focusPhoneInput() {
-  activeMethod.value = 'phone';
-  phoneFocused.value = true;
-  uni.pageScrollTo({ scrollTop: 260, duration: 180 });
+async function handleWechatPhoneLogin(event: { detail?: { code?: string; errMsg?: string } }) {
+  if (!ensureAgreed()) return;
+
+  const detail = event.detail;
+  if (!detail?.code) {
+    uni.showToast({
+      title: detail?.errMsg?.includes('deny') ? '请授权手机号登录' : '手机号授权失败',
+      icon: 'none',
+    });
+    return;
+  }
+
+  loading.value = true;
+  try {
+    const result = await wechatPhoneLogin(detail.code);
+    handleLoginResult(result);
+  } catch (error) {
+    uni.showToast({
+      title: error instanceof Error ? error.message : '手机号快捷登录失败',
+      icon: 'none',
+    });
+  } finally {
+    loading.value = false;
+  }
 }
 
 function toggleAgreement() {
@@ -298,27 +319,8 @@ function handleHeroImageError(error: unknown) {
     </view>
 
     <view class="login-card">
-      <view class="quick-row">
-        <!-- #ifdef MP-WEIXIN -->
-        <button class="quick-btn wx-btn" :loading="loading" @tap="handleWxLogin">
-          <image class="quick-icon" src="/static/icons/login/wechat.svg" mode="aspectFit" />
-          <text>微信快捷登录</text>
-        </button>
-        <!-- #endif -->
-        <button class="quick-btn phone-btn" @tap="focusPhoneInput">
-          <image class="quick-icon" src="/static/icons/login/phone.svg" mode="aspectFit" />
-          <text>手机号快捷登录</text>
-        </button>
-      </view>
-
-      <view class="divider">
-        <view class="divider-line" />
-        <text class="divider-text">选择登录方式</text>
-        <view class="divider-line" />
-      </view>
-
       <view class="method-tabs">
-        <button class="method-tab" :class="{ active: activeMethod === 'phone' }" @tap="activeMethod = 'phone'">手机号</button>
+        <button class="method-tab" :class="{ active: activeMethod === 'phone' }" @tap="activeMethod = 'phone'">手机号验证码</button>
         <button class="method-tab" :class="{ active: activeMethod === 'password' }" @tap="activeMethod = 'password'">用户名密码</button>
         <button class="method-tab" :class="{ active: activeMethod === 'email' }" @tap="activeMethod = 'email'">邮箱验证码</button>
       </view>
@@ -441,6 +443,25 @@ function handleHeroImageError(error: unknown) {
         <image class="button-icon login-icon" src="/static/icons/login/login.svg" mode="aspectFit" />
         <text>{{ activeMethod === 'password' ? '用户名登录 / 自动注册' : '登录 / 自动注册' }}</text>
       </button>
+
+      <view class="divider quick-divider">
+        <view class="divider-line" />
+        <text class="divider-text">或使用快捷登录</text>
+        <view class="divider-line" />
+      </view>
+
+      <view class="quick-row">
+        <!-- #ifdef MP-WEIXIN -->
+        <button class="quick-btn wx-btn" :loading="loading" @tap="handleWxLogin">
+          <image class="quick-icon" src="/static/icons/login/wechat.svg" mode="aspectFit" />
+          <text>微信快捷登录</text>
+        </button>
+        <!-- #endif -->
+        <button class="quick-btn phone-btn" open-type="getPhoneNumber" @getphonenumber="handleWechatPhoneLogin">
+          <image class="quick-icon" src="/static/icons/login/phone.svg" mode="aspectFit" />
+          <text>手机号快捷登录</text>
+        </button>
+      </view>
 
       <view class="security-points">
         <view class="point">

@@ -80,6 +80,52 @@ async function applyInitSql(config: {
   }
 }
 
+async function ensureUserSchema(config: {
+  host: string;
+  port: number;
+  user: string;
+  password: string;
+  database: string;
+}) {
+  const connection = await mysql.createConnection({
+    host: config.host,
+    port: config.port,
+    user: config.user,
+    password: config.password,
+    database: config.database,
+  });
+
+  try {
+    const [columns] = await connection.query(
+      `SELECT COLUMN_NAME AS columnName
+       FROM information_schema.COLUMNS
+       WHERE TABLE_SCHEMA = ? AND TABLE_NAME = 'users' AND COLUMN_NAME = 'username'`,
+      [config.database],
+    );
+
+    if ((columns as Array<{ columnName: string }>).length === 0) {
+      console.log('[database] 检测到 users.username 缺失，开始添加字段');
+      await connection.query('ALTER TABLE `users` ADD COLUMN `username` VARCHAR(64) NULL');
+      console.log('[database] users.username 字段添加完成');
+    }
+
+    const [indexes] = await connection.query(
+      `SELECT INDEX_NAME AS indexName
+       FROM information_schema.STATISTICS
+       WHERE TABLE_SCHEMA = ? AND TABLE_NAME = 'users' AND INDEX_NAME = 'users_username_key'`,
+      [config.database],
+    );
+
+    if ((indexes as Array<{ indexName: string }>).length === 0) {
+      console.log('[database] 检测到 users.username 唯一索引缺失，开始创建索引');
+      await connection.query('CREATE UNIQUE INDEX `users_username_key` ON `users`(`username`)');
+      console.log('[database] users.username 唯一索引创建完成');
+    }
+  } finally {
+    await connection.end();
+  }
+}
+
 export async function prepareDatabase() {
   const config = resolveMysqlConnectionConfig();
   if (!config) {
@@ -107,9 +153,11 @@ export async function prepareDatabase() {
 
   const tableCount = await countTables(config);
   if (tableCount > 0) {
-    console.log(`[database] 已存在 ${tableCount} 张表，跳过建表`);
+    console.log(`[database] 已存在 ${tableCount} 张表，开始检查增量字段`);
+    await ensureUserSchema(config);
     return;
   }
 
   await applyInitSql(config);
+  await ensureUserSchema(config);
 }
