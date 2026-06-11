@@ -123,6 +123,9 @@ let pendingVaultSetup:
     }
   | null = null;
 let pendingPhone = '';
+let pendingEmail = '';
+let pendingUsername = '';
+let pendingPassword = '';
 
 export const vaultSession = {
   setVaultKey(key: Uint8Array) {
@@ -176,6 +179,49 @@ export const vaultSession = {
     pendingPhone = '';
   },
 
+  setPendingEmail(email: string) {
+    pendingEmail = email;
+  },
+
+  getPendingEmail() {
+    return pendingEmail;
+  },
+
+  clearPendingEmail() {
+    pendingEmail = '';
+  },
+
+  setPendingUsername(username: string) {
+    pendingUsername = username;
+  },
+
+  getPendingUsername() {
+    return pendingUsername;
+  },
+
+  clearPendingUsername() {
+    pendingUsername = '';
+  },
+
+  setPendingPassword(password: string) {
+    pendingPassword = password;
+  },
+
+  getPendingPassword() {
+    return pendingPassword;
+  },
+
+  clearPendingPassword() {
+    pendingPassword = '';
+  },
+
+  clearPendingRegisterIdentity() {
+    pendingPhone = '';
+    pendingEmail = '';
+    pendingUsername = '';
+    pendingPassword = '';
+  },
+
   setPendingVaultSetup(setup: { recoveryKey: string; recoveryLastGroup: string }) {
     pendingVaultSetup = setup;
   },
@@ -194,7 +240,7 @@ export const vaultSession = {
     recoveryBundleMemory = null;
     pendingVaultSetup = null;
     clearToken();
-    pendingPhone = '';
+    vaultSession.clearPendingRegisterIdentity();
   },
 };
 

@@ -22,7 +22,10 @@ export interface AuthResult {
 }
 
 export function register(payload: {
-  phone: string;
+  phone?: string;
+  email?: string;
+  username?: string;
+  password?: string;
   encryptedVaultKey?: string;
   kdfSalt?: string;
   kdfParams?: NonNullable<AuthResult['vaultKeyBundle']>['kdfParams'];
@@ -38,7 +41,7 @@ export function register(payload: {
 
 export type AuthLoginResponse =
   | AuthResult
-  | { registered: false; phone?: string }
+  | { registered: false; phone?: string; email?: string; username?: string }
   | { mfaRequired: true; pendingId: string };
 
 export function isAuthResult(value: AuthLoginResponse): value is AuthResult {
@@ -121,6 +124,33 @@ export function createVault(payload: {
     url: '/vault/create',
     method: 'POST',
     body: payload,
+  });
+}
+
+export function sendEmailLoginCode(email: string) {
+  return request<{ success: boolean }>({
+    url: '/auth/send-email-code',
+    method: 'POST',
+    body: { email },
+    auth: false,
+  });
+}
+
+export function loginWithEmailCode(email: string, code: string) {
+  return request<AuthLoginResponse>({
+    url: '/auth/login-with-email-code',
+    method: 'POST',
+    body: { email, code },
+    auth: false,
+  });
+}
+
+export function loginWithPassword(username: string, password: string) {
+  return request<AuthLoginResponse>({
+    url: '/auth/login-with-password',
+    method: 'POST',
+    body: { username, password },
+    auth: false,
   });
 }
 
