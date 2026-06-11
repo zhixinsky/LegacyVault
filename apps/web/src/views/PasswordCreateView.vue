@@ -27,13 +27,16 @@ onMounted(async () => {
     title.value = await decryptVaultTitle(item.titleCiphertext);
     const payload = await decryptVaultPayload<{
       platform?: string;
+      provider?: string;
+      host?: string;
       username?: string;
+      address?: string;
       password?: string;
       website?: string;
       note?: string;
     }>(item.encryptedPayload);
-    platform.value = payload.platform ?? '';
-    username.value = payload.username ?? '';
+    platform.value = payload.platform ?? payload.provider ?? payload.host ?? '';
+    username.value = payload.username ?? payload.address ?? '';
     password.value = payload.password ?? '';
     website.value = payload.website ?? '';
     note.value = payload.note ?? '';
@@ -56,7 +59,9 @@ async function handleSave() {
     const encrypted = await encryptVaultItemPayload(
       {
         platform: platform.value,
+        provider: platform.value,
         username: username.value,
+        address: username.value,
         password: password.value,
         website: website.value,
         note: note.value,
@@ -71,7 +76,7 @@ async function handleSave() {
       });
     } else {
       await createVaultItem({
-        type: 'password',
+        type: 'email_account',
         titleCiphertext: encrypted.titleCiphertext,
         encryptedPayload: encrypted.encryptedPayload,
       });

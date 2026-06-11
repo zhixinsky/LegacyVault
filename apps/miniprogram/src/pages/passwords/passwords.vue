@@ -50,11 +50,14 @@ async function loadItems() {
 
   try {
 
-    const result = await listVaultItems('password');
+    const [emailResult, serverResult] = await Promise.all([
+      listVaultItems('email_account'),
+      listVaultItems('server_account'),
+    ]);
 
     const rows = [];
 
-    for (const item of result.items) {
+    for (const item of [...emailResult.items, ...serverResult.items]) {
 
       rows.push(await parseItem(item));
 
@@ -82,7 +85,7 @@ async function parseItem(item: VaultItem) {
 
     const title = await decryptVaultTitle(item.titleCiphertext);
 
-    const payload = await decryptVaultPayload<{ username?: string }>(item.encryptedPayload);
+    const payload = await decryptVaultPayload<{ username?: string; address?: string; provider?: string; host?: string }>(item.encryptedPayload);
 
     return {
 
@@ -90,7 +93,7 @@ async function parseItem(item: VaultItem) {
 
       title,
 
-      username: payload.username ?? '-',
+      username: payload.username ?? payload.address ?? payload.host ?? payload.provider ?? '-',
 
       encryptedPayload: item.encryptedPayload,
 

@@ -24,7 +24,7 @@ function matchesQuery(parts: Array<string | undefined>, query: string) {
 }
 
 async function searchVaultType(
-  type: VaultItemType | 'password' | 'note',
+  type: VaultItemType | 'note',
   category: string,
   route: string,
   query: string,
@@ -61,9 +61,10 @@ export async function searchVaultItems(query: string): Promise<VaultSearchResult
   const fileResults = await searchFiles(trimmed);
 
   const groups = await Promise.all([
-    searchVaultType('password', '账号密码', '/pages/passwords/passwords', trimmed),
+    searchVaultType('email_account', '账号密码', '/pages/passwords/passwords', trimmed),
+    searchVaultType('server_account', '账号密码', '/pages/passwords/passwords', trimmed),
     searchVaultType('note', '私密笔记', '/pages/notes/notes', trimmed),
-    ...MANAGED_VAULT_TYPES.map((type) => {
+    ...MANAGED_VAULT_TYPES.filter((type) => !['email_account', 'server_account'].includes(type)).map((type) => {
       const config = getVaultItemTypeConfig(type);
       return searchVaultType(
         type,

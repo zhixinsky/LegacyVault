@@ -113,22 +113,24 @@ async function loadDashboard() {
       documentResult,
       stockResult,
       bankResult,
+      serverResult,
       fileResult,
       albumResult,
       allVaultResult,
     ] = await Promise.all([
-      listVaultItems('password'),
+      listVaultItems('email_account'),
       listVaultItems('note'),
       listVaultItems('document'),
       listVaultItems('stock_account'),
       listVaultItems('bank_account'),
+      listVaultItems('server_account'),
       listFiles(),
       listAlbums(),
       listVaultItems(undefined, 1),
     ]);
 
     updateCategoryCounts({
-      password: passwordResult.total,
+      password: passwordResult.total + serverResult.total,
       note: noteResult.total,
       document: documentResult.total,
       finance: stockResult.total + bankResult.total,
@@ -244,7 +246,9 @@ function getVaultTypeLabel(type: string) {
 }
 
 function getVaultItemUrl(item: VaultItem) {
-  if (item.type === 'password') return `/pages/password-create/password-create?id=${item.id}`;
+  if (item.type === 'password' || item.type === 'email_account' || item.type === 'server_account') {
+    return `/pages/password-create/password-create?id=${item.id}`;
+  }
   if (item.type === 'note') return `/pages/note-create/note-create?id=${item.id}`;
   if (item.type === 'document') return '/pages/accounts/accounts?type=document';
   if (['stock_account', 'bank_account', 'email_account', 'server_account', 'custom'].includes(item.type)) {

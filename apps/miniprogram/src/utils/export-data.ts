@@ -24,9 +24,10 @@ async function decryptVaultItemsByType(type: string) {
 }
 
 export async function buildVaultExportData() {
-  const [passwords, notes, albums, files, contacts, inheritanceRule, ...accountGroups] =
+  const [emailAccounts, serverAccounts, notes, albums, files, contacts, inheritanceRule, ...accountGroups] =
     await Promise.all([
-      listVaultItems('password', 1),
+      listVaultItems('email_account', 1),
+      listVaultItems('server_account', 1),
       listVaultItems('note', 1),
       listAlbums(),
       listFiles(),
@@ -40,7 +41,7 @@ export async function buildVaultExportData() {
   );
 
   const decryptedPasswords = [];
-  for (const item of passwords.items) {
+  for (const item of [...emailAccounts.items, ...serverAccounts.items]) {
     decryptedPasswords.push({
       id: item.id,
       title: await decryptVaultTitle(item.titleCiphertext),
