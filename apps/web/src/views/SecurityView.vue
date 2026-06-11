@@ -130,7 +130,7 @@ async function handleSetupMfa() {
 
     otpauthUrl.value = result.otpauthUrl;
 
-    message.value = '请使用验证器 App 扫描二维码或手动输入密钥';
+    message.value = '请使用验证器 App 手动输入密钥或导入 URI';
 
   } catch (err) {
 
@@ -142,6 +142,16 @@ async function handleSetupMfa() {
 
   }
 
+}
+
+async function copyText(text: string, successText: string) {
+  if (!text) return;
+  try {
+    await navigator.clipboard.writeText(text);
+    message.value = successText;
+  } catch {
+    error.value = '复制失败，请手动选择复制';
+  }
 }
 
 
@@ -352,13 +362,29 @@ async function handleRevokeDevice(id: string) {
 
       <p class="mt-2 text-sm text-slate-500">高风险操作需要验证码</p>
 
+      <div class="mt-4 rounded-2xl bg-blue-50 p-4 text-sm text-slate-600 ring-1 ring-blue-100">
+        <p class="font-semibold text-slate-900">使用方式</p>
+        <p class="mt-2">在 Microsoft Authenticator、Google Authenticator、1Password 或 Authy 中选择添加账号，手动输入下方密钥，随后把 App 中生成的 6 位验证码填回本页启用。</p>
+      </div>
+
 
 
       <div v-if="!mfaEnabled" class="mt-6 space-y-4">
 
         <VButton variant="primary" :disabled="loading" @click="handleSetupMfa">生成二次验证密钥</VButton>
 
-        <p v-if="setupSecret" class="break-all text-xs text-slate-500">密钥：{{ setupSecret }}</p>
+        <div v-if="setupSecret" class="space-y-3 rounded-2xl bg-slate-50 p-4 ring-1 ring-slate-200">
+          <div>
+            <p class="text-xs font-semibold text-slate-500">手动输入密钥</p>
+            <p class="mt-1 break-all font-mono text-sm text-slate-900">{{ setupSecret }}</p>
+            <VButton class="mt-3" variant="secondary" @click="copyText(setupSecret, '密钥已复制')">复制密钥</VButton>
+          </div>
+          <div v-if="otpauthUrl">
+            <p class="text-xs font-semibold text-slate-500">兼容 URI</p>
+            <p class="mt-1 break-all font-mono text-xs text-slate-500">{{ otpauthUrl }}</p>
+            <VButton class="mt-3" variant="secondary" @click="copyText(otpauthUrl, 'URI 已复制')">复制 URI</VButton>
+          </div>
+        </div>
 
         <input v-model="verifyCode" class="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm" placeholder="输入 6 位验证码以启用" />
 
