@@ -49,7 +49,6 @@ function goBack() {
     </view>
 
     <view class="panel">
-      <image class="hero-art" src="/static/illustrations/vault-safe-hero.png" mode="aspectFit" />
       <text class="title">确认您已保存恢复密钥</text>
       <text class="subtitle">请输入恢复密钥的最后 4 位，用于确认您已经妥善保存。</text>
 
@@ -124,6 +123,9 @@ button::after { border: none; }
 }
 
 .nav-title {
+  flex: 1;
+  margin-left: 8rpx;
+  text-align: left;
   font-size: 30rpx;
   font-weight: 800;
   color: #0b1f4d;
@@ -155,17 +157,11 @@ button::after { border: none; }
   border-radius: 48rpx;
   background: #fff;
   box-shadow: 0 18rpx 56rpx rgba(11, 31, 77, 0.1);
-  text-align: center;
-}
-
-.hero-art {
-  width: 260rpx;
-  height: 220rpx;
+  text-align: left;
 }
 
 .title {
   display: block;
-  margin-top: 12rpx;
   color: #0b1f4d;
   font-size: 42rpx;
   font-weight: 900;
@@ -197,7 +193,7 @@ button::after { border: none; }
   font-size: 34rpx;
   font-weight: 900;
   letter-spacing: 4rpx;
-  text-align: center;
+  text-align: left;
   background: #fff;
 }
 

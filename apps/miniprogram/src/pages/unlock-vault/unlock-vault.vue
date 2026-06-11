@@ -74,7 +74,6 @@ function goLogin() {
     <image class="page-bg" :src="heroBackgroundUrl" mode="aspectFill" />
 
     <view class="hero">
-      <image class="hero-art" src="/static/illustrations/vault-safe-hero.png" mode="aspectFit" />
       <text class="title">解锁保险箱</text>
       <text class="subtitle">请输入主密码解锁本机内存中的 vaultKey。主密码不会上传服务器。</text>
     </view>
@@ -153,18 +152,12 @@ button::after { border: none; }
 }
 
 .hero {
-  text-align: center;
+  text-align: left;
   padding: 30rpx 0 32rpx;
-}
-
-.hero-art {
-  width: 260rpx;
-  height: 220rpx;
 }
 
 .title {
   display: block;
-  margin-top: 12rpx;
   color: #0b1f4d;
   font-size: 44rpx;
   font-weight: 900;
@@ -172,7 +165,7 @@ button::after { border: none; }
 
 .subtitle {
   display: block;
-  margin: 18rpx auto 0;
+  margin: 18rpx 0 0;
   max-width: 620rpx;
   color: #66758a;
   font-size: 26rpx;

@@ -94,7 +94,6 @@ async function handleCreateVault() {
           <text>密码不会上传</text>
         </view>
       </view>
-      <image class="hero-art" src="/static/illustrations/vault-safe-hero.png" mode="aspectFit" />
     </view>
 
     <view class="form-card">
@@ -229,6 +228,9 @@ button::after {
 }
 
 .nav-title {
+  flex: 1;
+  margin-left: 8rpx;
+  text-align: left;
   font-size: 30rpx;
   font-weight: 800;
   color: #0b1f4d;
@@ -273,10 +275,9 @@ button::after {
 }
 
 .hero {
-  display: grid;
-  grid-template-columns: 1fr 260rpx;
+  min-height: 300rpx;
+  display: flex;
   align-items: center;
-  min-height: 330rpx;
 }
 
 .hero-title {
@@ -294,7 +295,7 @@ button::after {
 .hero-subtitle {
   display: block;
   margin-top: 26rpx;
-  max-width: 430rpx;
+  max-width: 620rpx;
   font-size: 26rpx;
   line-height: 1.65;
   color: #67748a;
@@ -314,11 +315,6 @@ button::after {
   color: #1e63d6;
   font-size: 20rpx;
   font-weight: 700;
-}
-
-.hero-art {
-  width: 280rpx;
-  height: 280rpx;
 }
 
 .form-card {

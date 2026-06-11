@@ -13,8 +13,6 @@ import {
   encryptJson,
   encryptVaultKey,
   encryptVaultKeyByRecovery,
-  generateRecoveryKey,
-  generateVaultKey,
   hashChallengeAnswer,
   normalizeChallengeAnswer,
   randomBytesAsync,
@@ -45,10 +43,10 @@ export async function registerWithMasterPassword(
 }
 
 export async function buildCreateVaultPayload(masterPassword: string) {
-  const vaultKey = generateVaultKey();
-  const recoveryKey = generateRecoveryKey();
-  const master = deriveMasterKey(masterPassword);
-  const recovery = deriveRecoveryKeyByPhrase(recoveryKey);
+  const vaultKey = await randomBytesAsync(AES_KEY_LENGTH);
+  const recoveryKey = await generateRecoveryKeyAsync();
+  const master = deriveMasterKey(masterPassword, await randomBytesAsync(16));
+  const recovery = deriveRecoveryKeyByPhrase(recoveryKey, await randomBytesAsync(16));
 
   try {
     const encryptedVaultKey = await encryptVaultKey(vaultKey, master.masterKey);
@@ -78,6 +76,14 @@ export async function buildCreateVaultPayload(masterPassword: string) {
     zeroize(master.masterKey);
     zeroize(recovery.masterKey);
   }
+}
+
+const RECOVERY_ALPHABET = '23456789ABCDEFGHJKLMNPQRSTUVWXYZ';
+
+async function generateRecoveryKeyAsync() {
+  const bytes = await randomBytesAsync(24);
+  const chars = Array.from(bytes, (byte) => RECOVERY_ALPHABET[byte % RECOVERY_ALPHABET.length]);
+  return Array.from({ length: 6 }, (_, index) => chars.slice(index * 4, index * 4 + 4).join('')).join('-');
 }
 
 export async function unlockVaultWithMasterPassword(masterPassword: string) {
