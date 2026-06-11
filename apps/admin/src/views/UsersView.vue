@@ -32,12 +32,12 @@ async function changeStatus(id: string, status: string) {
 </script>
 
 <template>
-  <section class="rounded-xl border border-slate-800 bg-slate-900 p-6">
-    <h3 class="font-semibold text-white">用户列表</h3>
-    <div v-if="loading" class="mt-6 text-slate-400">加载中...</div>
+  <section class="rounded-[22px] border border-slate-100 bg-white p-6 shadow-sm">
+    <h3 class="font-semibold text-slate-950">用户列表</h3>
+    <div v-if="loading" class="mt-6 text-slate-500">加载中...</div>
     <div v-else class="mt-4 overflow-x-auto">
       <table class="min-w-full text-left text-sm">
-        <thead class="text-slate-400">
+        <thead class="text-slate-500">
           <tr>
             <th class="py-2 pr-4">手机号</th>
             <th class="py-2 pr-4">邮箱</th>
@@ -47,7 +47,7 @@ async function changeStatus(id: string, status: string) {
           </tr>
         </thead>
         <tbody>
-          <tr v-for="user in users" :key="user.id" class="border-t border-slate-800">
+          <tr v-for="user in users" :key="user.id" class="border-t border-slate-100 text-slate-700">
             <td class="py-3 pr-4">{{ user.phone || '—' }}</td>
             <td class="py-3 pr-4">{{ user.email || '—' }}</td>
             <td class="py-3 pr-4">{{ user.status }}</td>
@@ -66,6 +66,6 @@ async function changeStatus(id: string, status: string) {
         </tbody>
       </table>
     </div>
-    <p v-if="error" class="mt-3 text-sm text-red-400">{{ error }}</p>
+    <p v-if="error" class="mt-3 text-sm text-red-600">{{ error }}</p>
   </section>
 </template>

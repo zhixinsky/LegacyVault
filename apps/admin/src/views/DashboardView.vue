@@ -37,30 +37,30 @@ async function handleScan() {
 
 <template>
   <section class="grid gap-4 md:grid-cols-3">
-    <article class="rounded-xl border border-slate-800 bg-slate-900 p-6">
-      <p class="text-sm text-slate-400">注册用户</p>
-      <p class="mt-2 text-3xl font-bold text-white">{{ loading ? '—' : stats.users }}</p>
+    <article class="rounded-[22px] border border-slate-100 bg-white p-6 shadow-sm">
+      <p class="text-sm text-slate-500">注册用户</p>
+      <p class="mt-2 text-3xl font-bold text-slate-950">{{ loading ? '—' : stats.users }}</p>
     </article>
-    <article class="rounded-xl border border-slate-800 bg-slate-900 p-6">
-      <p class="text-sm text-slate-400">进行中交接事件</p>
-      <p class="mt-2 text-3xl font-bold text-white">{{ loading ? '—' : stats.activeEvents }}</p>
+    <article class="rounded-[22px] border border-slate-100 bg-white p-6 shadow-sm">
+      <p class="text-sm text-slate-500">进行中交接事件</p>
+      <p class="mt-2 text-3xl font-bold text-slate-950">{{ loading ? '—' : stats.activeEvents }}</p>
     </article>
-    <article class="rounded-xl border border-slate-800 bg-slate-900 p-6">
-      <p class="text-sm text-slate-400">今日高风险操作</p>
-      <p class="mt-2 text-3xl font-bold text-amber-300">{{ loading ? '—' : stats.highRiskToday }}</p>
-      <router-link to="/security-alerts" class="mt-2 inline-block text-xs text-blue-400 hover:underline">
+    <article class="rounded-[22px] border border-amber-100 bg-white p-6 shadow-sm">
+      <p class="text-sm text-slate-500">今日高风险操作</p>
+      <p class="mt-2 text-3xl font-bold text-amber-600">{{ loading ? '—' : stats.highRiskToday }}</p>
+      <router-link to="/security-alerts" class="mt-2 inline-block text-xs font-semibold text-blue-600 hover:underline">
         查看安全告警 →
       </router-link>
     </article>
   </section>
 
-  <section class="mt-8 rounded-xl border border-slate-800 bg-slate-900 p-6">
-    <h3 class="font-semibold text-white">数字遗产扫描</h3>
-    <p class="mt-2 text-sm text-slate-400">手动触发 inactive 用户扫描与交接流程推进</p>
+  <section class="mt-5 rounded-[22px] border border-slate-100 bg-white p-6 shadow-sm">
+    <h3 class="font-semibold text-slate-950">数字遗产扫描</h3>
+    <p class="mt-2 text-sm text-slate-500">手动触发 inactive 用户扫描与交接流程推进</p>
     <VButton class="mt-4" variant="primary" :disabled="scanning" @click="handleScan">
       {{ scanning ? '扫描中...' : '立即扫描' }}
     </VButton>
-    <p v-if="message" class="mt-3 text-sm text-emerald-400">{{ message }}</p>
-    <p v-if="error" class="mt-3 text-sm text-red-400">{{ error }}</p>
+    <p v-if="message" class="mt-3 text-sm text-emerald-600">{{ message }}</p>
+    <p v-if="error" class="mt-3 text-sm text-red-600">{{ error }}</p>
   </section>
 </template>

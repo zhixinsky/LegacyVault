@@ -27,18 +27,18 @@ onMounted(async () => {
 </script>
 
 <template>
-  <section class="rounded-xl border border-slate-800 bg-slate-900 p-6">
-    <h3 class="font-semibold text-white">交接事件</h3>
-    <div v-if="loading" class="mt-6 text-slate-400">加载中...</div>
-    <ul v-else class="mt-4 divide-y divide-slate-800">
+  <section class="rounded-[22px] border border-slate-100 bg-white p-6 shadow-sm">
+    <h3 class="font-semibold text-slate-950">交接事件</h3>
+    <div v-if="loading" class="mt-6 text-slate-500">加载中...</div>
+    <ul v-else class="mt-4 divide-y divide-slate-100">
       <li v-for="item in events" :key="item.id" class="py-3 text-sm">
-        <p class="text-white">{{ item.status }} · {{ item.currentStage }}</p>
-        <p class="text-slate-400">
+        <p class="font-medium text-slate-950">{{ item.status }} · {{ item.currentStage }}</p>
+        <p class="text-slate-500">
           用户 {{ item.user.phone || item.user.email || '未知' }} ·
           {{ new Date(item.triggerAt).toLocaleString() }}
         </p>
       </li>
     </ul>
-    <p v-if="error" class="mt-3 text-sm text-red-400">{{ error }}</p>
+    <p v-if="error" class="mt-3 text-sm text-red-600">{{ error }}</p>
   </section>
 </template>

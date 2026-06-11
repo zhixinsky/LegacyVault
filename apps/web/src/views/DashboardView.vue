@@ -104,7 +104,7 @@ const shortcuts = [
     <section class="rounded-xl bg-white p-6 ring-1 ring-slate-200">
       <div class="flex items-center justify-between">
         <h2 class="font-semibold text-slate-900">最近账号密码</h2>
-        <button class="text-sm text-blue-600" @click="router.push('/app/passwords')">查看全部</button>
+        <button class="rounded-xl bg-blue-50 px-3 py-1.5 text-sm font-semibold text-blue-700 hover:bg-blue-100" @click="router.push('/app/passwords')">查看全部</button>
       </div>
       <div v-if="loading" class="py-8 text-center text-slate-400">加载中...</div>
       <div v-else-if="stats.recent.length === 0" class="py-8 text-center text-slate-400">暂无数据</div>

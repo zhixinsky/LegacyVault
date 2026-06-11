@@ -234,9 +234,9 @@ async function handlePurge(id: string) {
 
             <td class="px-6 py-4 space-x-3">
 
-              <button class="text-blue-600 hover:underline" @click="handleRestore(item.id)">恢复</button>
+              <button class="rounded-xl bg-blue-50 px-3 py-1.5 text-sm font-semibold text-blue-700 hover:bg-blue-100" @click="handleRestore(item.id)">恢复</button>
 
-              <button class="text-red-600 hover:underline" @click="handlePurge(item.id)">永久删除</button>
+              <button class="rounded-xl bg-red-50 px-3 py-1.5 text-sm font-semibold text-red-600 hover:bg-red-100" @click="handlePurge(item.id)">永久删除</button>
 
             </td>
 

@@ -46,30 +46,30 @@ function maskUser(phone?: string, email?: string, userId?: string) {
 </script>
 
 <template>
-  <section class="rounded-xl border border-slate-800 bg-slate-900 p-6">
-    <h3 class="font-semibold text-white">安全告警</h3>
-    <p class="mt-2 text-sm text-slate-400">高风险与严重级别审计事件（登录异常、敏感操作等）</p>
+  <section class="rounded-[22px] border border-slate-100 bg-white p-6 shadow-sm">
+    <h3 class="font-semibold text-slate-950">安全告警</h3>
+    <p class="mt-2 text-sm text-slate-500">高风险与严重级别审计事件（登录异常、敏感操作等）</p>
 
-    <div v-if="loading" class="mt-6 text-slate-400">加载中...</div>
-    <div v-else-if="alerts.length === 0" class="mt-6 text-slate-400">暂无告警</div>
-    <ul v-else class="mt-4 divide-y divide-slate-800">
+    <div v-if="loading" class="mt-6 text-slate-500">加载中...</div>
+    <div v-else-if="alerts.length === 0" class="mt-6 text-slate-500">暂无告警</div>
+    <ul v-else class="mt-4 divide-y divide-slate-100">
       <li v-for="item in alerts" :key="item.id" class="py-4 text-sm">
         <div class="flex items-start justify-between gap-4">
           <div>
-            <p class="font-medium text-amber-300">{{ item.actionLabel }}</p>
-            <p class="mt-1 text-slate-400">{{ item.userLabel }}</p>
-            <p class="mt-1 font-mono text-xs text-slate-500">
+            <p class="font-medium text-amber-600">{{ item.actionLabel }}</p>
+            <p class="mt-1 text-slate-500">{{ item.userLabel }}</p>
+            <p class="mt-1 font-mono text-xs text-slate-400">
               IP {{ item.ip ?? '—' }}
               <span v-if="item.device"> · {{ item.device.slice(0, 60) }}</span>
             </p>
           </div>
-          <span class="shrink-0 rounded-full bg-amber-900/50 px-2 py-1 text-xs text-amber-200">
+          <span class="shrink-0 rounded-full bg-amber-100 px-2 py-1 text-xs font-semibold text-amber-700">
             {{ item.riskLevel }}
           </span>
         </div>
-        <p class="mt-2 text-xs text-slate-500">{{ item.createdAt }}</p>
+        <p class="mt-2 text-xs text-slate-400">{{ item.createdAt }}</p>
       </li>
     </ul>
-    <p v-if="error" class="mt-3 text-sm text-red-400">{{ error }}</p>
+    <p v-if="error" class="mt-3 text-sm text-red-600">{{ error }}</p>
   </section>
 </template>

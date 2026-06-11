@@ -294,11 +294,11 @@ async function handleDelete(id: string) {
 
             <td class="px-6 py-4 space-x-3">
 
-              <button class="text-blue-600 hover:underline" @click="openReveal(item)">查看密码</button>
+              <button class="rounded-xl bg-blue-50 px-3 py-1.5 text-sm font-semibold text-blue-700 hover:bg-blue-100" @click="openReveal(item)">查看密码</button>
 
-              <button class="text-slate-600 hover:underline" @click="router.push(`/app/passwords/${item.id}/edit`)">编辑</button>
+              <button class="rounded-xl bg-slate-100 px-3 py-1.5 text-sm font-semibold text-slate-700 hover:bg-slate-200" @click="router.push(`/app/passwords/${item.id}/edit`)">编辑</button>
 
-              <button class="text-red-600 hover:underline" @click="handleDelete(item.id)">删除</button>
+              <button class="rounded-xl bg-red-50 px-3 py-1.5 text-sm font-semibold text-red-600 hover:bg-red-100" @click="handleDelete(item.id)">删除</button>
 
             </td>
 

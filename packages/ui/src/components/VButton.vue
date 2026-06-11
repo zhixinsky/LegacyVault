@@ -30,31 +30,40 @@ withDefaults(
   align-items: center;
   justify-content: center;
   gap: 0.5rem;
-  padding: 0.625rem 1.25rem;
-  border: none;
-  border-radius: 0.5rem;
+  min-height: 2.75rem;
+  padding: 0.7rem 1.25rem;
+  border: 1px solid transparent;
+  border-radius: 0.875rem;
   font-size: 0.875rem;
-  font-weight: 500;
+  font-weight: 700;
   cursor: pointer;
-  transition: opacity 0.15s ease;
+  box-shadow: 0 10px 22px rgba(15, 23, 42, 0.08);
+  transition:
+    transform 0.15s ease,
+    box-shadow 0.15s ease,
+    opacity 0.15s ease,
+    background 0.15s ease;
 }
 
 .vp-btn:hover:not(:disabled) {
-  opacity: 0.9;
+  opacity: 0.95;
+  transform: translateY(-1px);
+  box-shadow: 0 14px 28px rgba(15, 23, 42, 0.12);
 }
 
 .vp-btn--primary {
-  background: #2563eb;
+  background: linear-gradient(135deg, #3d83ff, #0962ff);
   color: #fff;
 }
 
 .vp-btn--secondary {
-  background: #f1f5f9;
-  color: #0f172a;
+  border-color: #dbeafe;
+  background: #eef6ff;
+  color: #0b3f91;
 }
 
 .vp-btn--danger {
-  background: #dc2626;
+  background: linear-gradient(135deg, #ef4444, #dc2626);
   color: #fff;
 }
 

@@ -464,7 +464,7 @@ async function handleRevokeDevice(id: string) {
 
           </div>
 
-          <button class="text-red-600 hover:underline" @click="handleRevokeDevice(device.id)">移除</button>
+          <button class="rounded-xl bg-red-50 px-3 py-1.5 text-sm font-semibold text-red-600 hover:bg-red-100" @click="handleRevokeDevice(device.id)">移除</button>
 
         </li>
 

@@ -49,12 +49,12 @@ function maskUser(phone?: string, email?: string, userId?: string) {
 </script>
 
 <template>
-  <section class="rounded-xl border border-slate-800 bg-slate-900 p-6">
+  <section class="rounded-[22px] border border-slate-100 bg-white p-6 shadow-sm">
     <div class="flex flex-wrap items-center justify-between gap-3">
-      <h3 class="font-semibold text-white">审计日志</h3>
+      <h3 class="font-semibold text-slate-950">审计日志</h3>
       <select
         v-model="riskFilter"
-        class="rounded-lg border border-slate-700 bg-slate-950 px-3 py-2 text-sm text-slate-200"
+        class="rounded-2xl border border-slate-200 bg-slate-50 px-3 py-2 text-sm text-slate-700"
         @change="loadLogs"
       >
         <option value="">全部风险等级</option>
@@ -65,17 +65,17 @@ function maskUser(phone?: string, email?: string, userId?: string) {
       </select>
     </div>
 
-    <div v-if="loading" class="mt-6 text-slate-400">加载中...</div>
-    <ul v-else class="mt-4 divide-y divide-slate-800">
+    <div v-if="loading" class="mt-6 text-slate-500">加载中...</div>
+    <ul v-else class="mt-4 divide-y divide-slate-100">
       <li v-for="item in logs" :key="item.id" class="py-3 text-sm">
-        <p class="text-white">{{ item.actionLabel }}</p>
-        <p class="text-slate-400">
+        <p class="font-medium text-slate-950">{{ item.actionLabel }}</p>
+        <p class="text-slate-500">
           {{ item.userLabel }} · {{ item.actorType }} · {{ item.riskLevel }}
           <span v-if="item.ip"> · IP {{ item.ip }}</span>
         </p>
-        <p class="text-xs text-slate-500">{{ item.createdAt }}</p>
+        <p class="text-xs text-slate-400">{{ item.createdAt }}</p>
       </li>
     </ul>
-    <p v-if="error" class="mt-3 text-sm text-red-400">{{ error }}</p>
+    <p v-if="error" class="mt-3 text-sm text-red-600">{{ error }}</p>
   </section>
 </template>

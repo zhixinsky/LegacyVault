@@ -464,7 +464,7 @@ async function handlePreview(file: VaultFileItem) {
 
               <button
                 v-if="isImageFile(file) || isVideoFile(file)"
-                class="text-blue-600 hover:underline disabled:opacity-50"
+                class="rounded-xl bg-blue-50 px-3 py-1.5 text-sm font-semibold text-blue-700 hover:bg-blue-100 disabled:opacity-50"
                 :disabled="previewingId === file.id"
                 @click="handlePreview(file)"
               >
@@ -473,7 +473,7 @@ async function handlePreview(file: VaultFileItem) {
 
               <button
 
-                class="text-blue-600 hover:underline disabled:opacity-50"
+                class="rounded-xl bg-blue-50 px-3 py-1.5 text-sm font-semibold text-blue-700 hover:bg-blue-100 disabled:opacity-50"
 
                 :disabled="downloadingId === file.id"
 
@@ -485,9 +485,9 @@ async function handlePreview(file: VaultFileItem) {
 
               </button>
 
-              <button class="text-slate-600 hover:underline" @click="startEditMeta(file)">标签</button>
+              <button class="rounded-xl bg-slate-100 px-3 py-1.5 text-sm font-semibold text-slate-700 hover:bg-slate-200" @click="startEditMeta(file)">标签</button>
 
-              <button class="text-red-600 hover:underline" @click="handleDelete(file.id)">删除</button>
+              <button class="rounded-xl bg-red-50 px-3 py-1.5 text-sm font-semibold text-red-600 hover:bg-red-100" @click="handleDelete(file.id)">删除</button>
 
             </td>
 
