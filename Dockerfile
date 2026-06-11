@@ -2,7 +2,8 @@
 # 构建：docker build -t vaultpass .
 # 运行：docker run -p 8080:80 --env-file .env vaultpass
 
-FROM node:20-alpine AS base
+ARG NODE_IMAGE=node:20-alpine
+FROM ${NODE_IMAGE} AS base
 RUN corepack enable && corepack prepare pnpm@10.28.0 --activate
 WORKDIR /app
 
@@ -35,7 +36,7 @@ RUN pnpm --filter @vaultpass/types build \
 
 RUN mkdir -p apps/api/public && cp -r apps/web/dist/. apps/api/public/
 
-FROM node:20-alpine AS runner
+FROM base AS runner
 WORKDIR /app
 
 ENV NODE_ENV=production
