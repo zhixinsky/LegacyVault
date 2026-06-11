@@ -45,7 +45,6 @@ function goBack() {
     <view class="nav-bar">
       <button class="back-button" @tap="goBack">‹</button>
       <text class="nav-title">确认恢复密钥</text>
-      <view class="wx-capsule"><text>•••</text><view /><text>◎</text></view>
     </view>
 
     <view class="panel">
@@ -108,7 +107,7 @@ button::after { border: none; }
 .nav-bar {
   display: flex;
   align-items: center;
-  justify-content: space-between;
+  justify-content: flex-start;
   height: 88rpx;
 }
 
@@ -123,32 +122,11 @@ button::after { border: none; }
 }
 
 .nav-title {
-  flex: 1;
   margin-left: 8rpx;
   text-align: left;
   font-size: 30rpx;
   font-weight: 800;
   color: #0b1f4d;
-}
-
-.wx-capsule {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 18rpx;
-  width: 172rpx;
-  height: 64rpx;
-  border: 1rpx solid rgba(11, 31, 77, 0.14);
-  border-radius: 999rpx;
-  background: rgba(255, 255, 255, 0.76);
-  color: #111827;
-  font-size: 28rpx;
-}
-
-.wx-capsule view {
-  width: 1rpx;
-  height: 34rpx;
-  background: #d8dee8;
 }
 
 .panel {

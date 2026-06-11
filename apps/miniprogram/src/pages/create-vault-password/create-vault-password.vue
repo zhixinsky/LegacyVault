@@ -76,11 +76,6 @@ async function handleCreateVault() {
     <view class="nav-bar">
       <button class="back-button" @tap="goBack">‹</button>
       <text class="nav-title">创建保险箱</text>
-      <view class="wx-capsule">
-        <view class="dot-row"><text /><text /><text /></view>
-        <view class="capsule-divider" />
-        <view class="ring" />
-      </view>
     </view>
 
     <view class="hero">
@@ -213,7 +208,7 @@ button::after {
 .nav-bar {
   display: flex;
   align-items: center;
-  justify-content: space-between;
+  justify-content: flex-start;
   height: 88rpx;
 }
 
@@ -228,50 +223,11 @@ button::after {
 }
 
 .nav-title {
-  flex: 1;
   margin-left: 8rpx;
   text-align: left;
   font-size: 30rpx;
   font-weight: 800;
   color: #0b1f4d;
-}
-
-.wx-capsule {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 18rpx;
-  width: 172rpx;
-  height: 64rpx;
-  border: 1rpx solid rgba(11, 31, 77, 0.14);
-  border-radius: 999rpx;
-  background: rgba(255, 255, 255, 0.76);
-}
-
-.dot-row {
-  display: flex;
-  gap: 7rpx;
-}
-
-.dot-row text {
-  width: 9rpx;
-  height: 9rpx;
-  border-radius: 50%;
-  background: #111827;
-}
-
-.capsule-divider {
-  width: 1rpx;
-  height: 34rpx;
-  background: #d8dee8;
-}
-
-.ring {
-  width: 34rpx;
-  height: 34rpx;
-  border: 7rpx solid #111827;
-  border-radius: 50%;
-  box-sizing: border-box;
 }
 
 .hero {
