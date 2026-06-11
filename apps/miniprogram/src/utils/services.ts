@@ -486,7 +486,7 @@ export function revokeLoginDevice(id: string) {
 }
 
 export function setupMfa() {
-  return request<{ secret: string; otpauthUrl: string }>({
+  return request<{ secret: string; otpauthUrl: string; qrCodeDataUrl?: string }>({
     url: '/users/me/mfa/setup',
     method: 'POST',
   });

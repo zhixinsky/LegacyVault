@@ -28,6 +28,8 @@ const mfaEnabled = ref(false);
 const recoveryConfigured = ref(false);
 const recoveryHint = ref('');
 const setupSecret = ref('');
+const otpauthUrl = ref('');
+const otpauthQrCode = ref('');
 const verifyCode = ref('');
 const disableCode = ref('');
 const recoveryPassphrase = ref('');
@@ -121,7 +123,9 @@ async function handleSetupMfa() {
   try {
     const result = await setupMfa();
     setupSecret.value = result.secret;
-    uni.showToast({ title: '请用验证器扫码', icon: 'none' });
+    otpauthUrl.value = result.otpauthUrl;
+    otpauthQrCode.value = result.qrCodeDataUrl ?? '';
+    uni.showToast({ title: '请用验证器 App 扫码', icon: 'none' });
   } catch (error) {
     uni.showToast({ title: error instanceof Error ? error.message : '初始化失败', icon: 'none' });
   } finally {
@@ -138,6 +142,8 @@ async function handleEnableMfa() {
     await enableMfa(setupSecret.value, verifyCode.value);
     mfaEnabled.value = true;
     setupSecret.value = '';
+    otpauthUrl.value = '';
+    otpauthQrCode.value = '';
     verifyCode.value = '';
     uni.showToast({ title: '二次验证已启用', icon: 'success' });
   } catch (error) {
@@ -225,6 +231,15 @@ function lockVault() {
   uni.showToast({ title: '已锁定保险箱', icon: 'success' });
   uni.reLaunch({ url: '/pages/unlock-vault/unlock-vault' });
 }
+
+function copyMfaText(text: string, title: string) {
+  if (!text) return;
+  uni.setClipboardData({
+    data: text,
+    success: () => uni.showToast({ title, icon: 'none' }),
+    fail: () => uni.showToast({ title: '复制失败，请长按手动复制', icon: 'none' }),
+  });
+}
 </script>
 
 <template>
@@ -237,8 +252,30 @@ function lockVault() {
         <text class="section-title">二次验证 (TOTP)</text>
         <text v-if="mfaEnabled" class="hint success-text">已启用</text>
         <view v-if="!mfaEnabled" class="form">
+          <view class="mfa-guide">
+            <text class="guide-title">使用方式</text>
+            <text class="guide-text">点击生成后，打开 Microsoft Authenticator、Google Authenticator、1Password 或 Authy，选择“添加账号/扫描二维码”。</text>
+            <text class="guide-text">扫描成功后，验证器 App 会每 30 秒生成一个 6 位验证码，把当前验证码填回本页并确认启用。</text>
+            <text class="guide-text guide-accent">如果无法扫码，可以复制手动密钥添加账号。</text>
+          </view>
           <button class="btn btn-primary" :disabled="mfaLoading" @tap="handleSetupMfa">生成验证密钥</button>
-          <text v-if="setupSecret" class="hint break-all">密钥：{{ setupSecret }}</text>
+          <view v-if="setupSecret" class="mfa-setup-card">
+            <view v-if="otpauthQrCode" class="qr-card">
+              <text class="qr-title">使用验证器 App 扫描二维码</text>
+              <image class="totp-qr" :src="otpauthQrCode" mode="aspectFit" />
+              <text class="hint">二维码仅用于绑定验证器，不是登录二维码，请勿发给他人。</text>
+            </view>
+            <view class="manual-card">
+              <text class="guide-title">手动输入密钥</text>
+              <text class="secret-text selectable" selectable>{{ setupSecret }}</text>
+              <button class="btn btn-secondary btn-small" @tap="copyMfaText(setupSecret, '密钥已复制')">复制密钥</button>
+            </view>
+            <view v-if="otpauthUrl" class="manual-card">
+              <text class="guide-title">兼容 URI</text>
+              <text class="uri-text selectable" selectable>{{ otpauthUrl }}</text>
+              <button class="btn btn-secondary btn-small" @tap="copyMfaText(otpauthUrl, 'URI 已复制')">复制 URI</button>
+            </view>
+          </view>
           <input v-model="verifyCode" class="input" placeholder="输入 6 位验证码" />
           <button class="btn btn-primary" @tap="handleEnableMfa">确认启用</button>
         </view>
@@ -363,6 +400,98 @@ function lockVault() {
   border-radius: 12rpx;
   padding: 16rpx 24rpx;
   font-size: 28rpx;
+}
+
+.mfa-guide {
+  padding: 24rpx;
+  border: 1rpx solid #bfdbfe;
+  border-radius: 24rpx;
+  background: #eff6ff;
+  display: flex;
+  flex-direction: column;
+  gap: 10rpx;
+}
+
+.guide-title {
+  font-size: 26rpx;
+  font-weight: 600;
+  color: #0f172a;
+}
+
+.guide-text {
+  font-size: 24rpx;
+  line-height: 1.6;
+  color: #475569;
+}
+
+.guide-accent {
+  color: #1d4ed8;
+}
+
+.mfa-setup-card {
+  padding: 20rpx;
+  border: 1rpx solid #e2e8f0;
+  border-radius: 24rpx;
+  background: #f8fafc;
+  display: flex;
+  flex-direction: column;
+  gap: 20rpx;
+}
+
+.qr-card {
+  padding: 24rpx;
+  border: 1rpx solid #e2e8f0;
+  border-radius: 24rpx;
+  background: #fff;
+  text-align: center;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 16rpx;
+}
+
+.qr-title {
+  font-size: 28rpx;
+  font-weight: 600;
+  color: #0f172a;
+}
+
+.totp-qr {
+  width: 360rpx;
+  height: 360rpx;
+  padding: 16rpx;
+  border: 1rpx solid #f1f5f9;
+  border-radius: 20rpx;
+  background: #fff;
+}
+
+.manual-card {
+  padding: 20rpx;
+  border-radius: 20rpx;
+  background: #fff;
+  display: flex;
+  flex-direction: column;
+  gap: 12rpx;
+}
+
+.secret-text,
+.uri-text {
+  font-family: monospace;
+  word-break: break-all;
+  color: #0f172a;
+}
+
+.secret-text {
+  font-size: 26rpx;
+}
+
+.uri-text {
+  font-size: 22rpx;
+  color: #64748b;
+}
+
+.btn-small {
+  margin-top: 4rpx;
 }
 
 .device-item {

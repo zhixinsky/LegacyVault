@@ -1,6 +1,7 @@
 import { BadRequestException, Injectable, UnauthorizedException } from '@nestjs/common';
 import { AuditRiskLevel } from '@prisma/client';
 import { authenticator } from 'otplib';
+import QRCode from 'qrcode';
 import { PrismaService } from '../../prisma/prisma.service';
 import { AuditLogService } from '../audit-log/audit-log.service';
 
@@ -11,10 +12,19 @@ export class MfaService {
     private readonly auditLogService: AuditLogService,
   ) {}
 
-  createSetupPayload(userId: string) {
+  async createSetupPayload(userId: string) {
     const secret = authenticator.generateSecret();
     const otpauthUrl = authenticator.keyuri(userId, 'VaultPass', secret);
-    return { secret, otpauthUrl };
+    const qrCodeDataUrl = await QRCode.toDataURL(otpauthUrl, {
+      width: 224,
+      margin: 2,
+      errorCorrectionLevel: 'M',
+      color: {
+        dark: '#0f172a',
+        light: '#ffffff',
+      },
+    });
+    return { secret, otpauthUrl, qrCodeDataUrl };
   }
 
   async enableMfa(

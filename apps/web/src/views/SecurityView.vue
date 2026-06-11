@@ -131,7 +131,7 @@ async function handleSetupMfa() {
     setupSecret.value = result.secret;
 
     otpauthUrl.value = result.otpauthUrl;
-    otpauthQrCode.value = await QRCode.toDataURL(result.otpauthUrl, {
+    otpauthQrCode.value = result.qrCodeDataUrl || (await QRCode.toDataURL(result.otpauthUrl, {
       width: 224,
       margin: 2,
       errorCorrectionLevel: 'M',
@@ -139,7 +139,7 @@ async function handleSetupMfa() {
         dark: '#0f172a',
         light: '#ffffff',
       },
-    });
+    }));
 
     message.value = '请使用验证器 App 扫描二维码，然后输入 6 位验证码启用';
 
