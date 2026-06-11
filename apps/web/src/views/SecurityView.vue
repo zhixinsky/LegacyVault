@@ -1,6 +1,7 @@
 <script setup lang="ts">
 
 import { onBeforeUnmount, onMounted, ref } from 'vue';
+import QRCode from 'qrcode';
 
 import { getNotificationChannelLabel, getNotificationTypeLabel } from '@vaultpass/types';
 import { VButton } from '@vaultpass/ui';
@@ -37,6 +38,7 @@ const recoveryHint = ref('');
 const setupSecret = ref('');
 
 const otpauthUrl = ref('');
+const otpauthQrCode = ref('');
 
 const verifyCode = ref('');
 
@@ -129,8 +131,17 @@ async function handleSetupMfa() {
     setupSecret.value = result.secret;
 
     otpauthUrl.value = result.otpauthUrl;
+    otpauthQrCode.value = await QRCode.toDataURL(result.otpauthUrl, {
+      width: 224,
+      margin: 2,
+      errorCorrectionLevel: 'M',
+      color: {
+        dark: '#0f172a',
+        light: '#ffffff',
+      },
+    });
 
-    message.value = '请使用验证器 App 手动输入密钥或导入 URI';
+    message.value = '请使用验证器 App 扫描二维码，然后输入 6 位验证码启用';
 
   } catch (err) {
 
@@ -173,6 +184,8 @@ async function handleEnableMfa() {
     mfaEnabled.value = true;
 
     setupSecret.value = '';
+    otpauthUrl.value = '';
+    otpauthQrCode.value = '';
 
     message.value = '二次验证已启用';
 
@@ -364,7 +377,9 @@ async function handleRevokeDevice(id: string) {
 
       <div class="mt-4 rounded-2xl bg-blue-50 p-4 text-sm text-slate-600 ring-1 ring-blue-100">
         <p class="font-semibold text-slate-900">使用方式</p>
-        <p class="mt-2">在 Microsoft Authenticator、Google Authenticator、1Password 或 Authy 中选择添加账号，手动输入下方密钥，随后把 App 中生成的 6 位验证码填回本页启用。</p>
+        <p class="mt-2">点击生成后，用 Microsoft Authenticator、Google Authenticator、1Password 或 Authy 选择“添加账号/扫描二维码”，扫描本页二维码。</p>
+        <p class="mt-2">扫描成功后，验证器 App 会每 30 秒生成一个 6 位验证码。把当前验证码填入下方输入框并确认启用。</p>
+        <p class="mt-2 text-blue-700">如果无法扫码，可以选择“手动输入密钥”，复制下方密钥添加账号。</p>
       </div>
 
 
@@ -373,7 +388,16 @@ async function handleRevokeDevice(id: string) {
 
         <VButton variant="primary" :disabled="loading" @click="handleSetupMfa">生成二次验证密钥</VButton>
 
-        <div v-if="setupSecret" class="space-y-3 rounded-2xl bg-slate-50 p-4 ring-1 ring-slate-200">
+        <div v-if="setupSecret" class="space-y-4 rounded-2xl bg-slate-50 p-4 ring-1 ring-slate-200">
+          <div v-if="otpauthQrCode" class="rounded-2xl bg-white p-4 text-center ring-1 ring-slate-200">
+            <p class="text-sm font-semibold text-slate-900">使用验证器 App 扫描二维码</p>
+            <img
+              :src="otpauthQrCode"
+              alt="二次验证二维码"
+              class="mx-auto mt-3 size-56 rounded-xl border border-slate-100 bg-white p-2"
+            />
+            <p class="mt-3 text-xs text-slate-500">二维码仅用于绑定验证器，不是登录二维码，请勿发给他人。</p>
+          </div>
           <div>
             <p class="text-xs font-semibold text-slate-500">手动输入密钥</p>
             <p class="mt-1 break-all font-mono text-sm text-slate-900">{{ setupSecret }}</p>
