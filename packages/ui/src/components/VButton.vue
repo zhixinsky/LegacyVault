@@ -30,12 +30,15 @@ withDefaults(
   align-items: center;
   justify-content: center;
   gap: 0.5rem;
+  flex-shrink: 0;
   min-height: 2.75rem;
   padding: 0.7rem 1.25rem;
   border: 1px solid transparent;
   border-radius: 0.875rem;
   font-size: 0.875rem;
   font-weight: 700;
+  line-height: 1;
+  white-space: nowrap;
   cursor: pointer;
   box-shadow: 0 10px 22px rgba(15, 23, 42, 0.08);
   transition:

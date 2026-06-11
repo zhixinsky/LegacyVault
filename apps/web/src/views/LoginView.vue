@@ -273,7 +273,7 @@ async function submitMfa() {
           <label>验证码</label>
           <div class="code-row">
             <input v-model="code" maxlength="6" placeholder="请输入 6 位验证码" />
-            <VButton variant="secondary" :disabled="sendingCode || countdown > 0" @click="handleSendCode">
+            <VButton class="code-action" variant="secondary" :disabled="sendingCode || countdown > 0" @click="handleSendCode">
               {{ countdown > 0 ? `${countdown}s` : sendingCode ? '发送中...' : '获取验证码' }}
             </VButton>
           </div>
@@ -292,7 +292,7 @@ async function submitMfa() {
           <label>邮箱验证码</label>
           <div class="code-row">
             <input v-model="emailCode" maxlength="6" placeholder="请输入 6 位验证码" />
-            <VButton variant="secondary" :disabled="sendingEmailCode || emailCountdown > 0" @click="handleSendEmailCode">
+            <VButton class="code-action" variant="secondary" :disabled="sendingEmailCode || emailCountdown > 0" @click="handleSendEmailCode">
               {{ emailCountdown > 0 ? `${emailCountdown}s` : sendingEmailCode ? '发送中...' : '获取验证码' }}
             </VButton>
           </div>
@@ -434,6 +434,10 @@ input:focus {
 .code-row input {
   margin-top: 0;
   min-width: 0;
+}
+
+.code-action {
+  width: 118px;
 }
 
 .agreement {
