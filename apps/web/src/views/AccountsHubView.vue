@@ -17,7 +17,7 @@ const cards = listManagedVaultConfigs();
       <button
         v-for="card in cards"
         :key="card.type"
-        class="rounded-xl bg-white p-6 text-left ring-1 ring-slate-200 transition hover:ring-blue-200"
+        class="rounded-2xl bg-gradient-to-br from-white via-blue-50/50 to-emerald-50/40 p-6 text-left shadow-sm ring-1 ring-blue-100 transition hover:-translate-y-0.5 hover:bg-blue-50 hover:shadow-md hover:ring-blue-200"
         @click="router.push(`/app/accounts/${card.type}`)"
       >
         <span class="text-3xl">{{ card.emoji }}</span>

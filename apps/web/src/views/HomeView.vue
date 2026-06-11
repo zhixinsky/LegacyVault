@@ -33,7 +33,7 @@ onMounted(() => {
         </div>
         <RouterLink
           to="/login"
-          class="rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700"
+          class="rounded-xl bg-blue-600 px-4 py-2.5 text-sm font-semibold text-white shadow-sm shadow-blue-200 hover:bg-blue-700"
         >
           登录
         </RouterLink>
@@ -49,7 +49,7 @@ onMounted(() => {
         <div class="mt-8 flex gap-4">
           <RouterLink
             to="/login"
-            class="rounded-lg bg-blue-600 px-5 py-2.5 text-sm font-medium text-white hover:bg-blue-700"
+            class="rounded-xl bg-blue-600 px-5 py-3 text-sm font-semibold text-white shadow-sm shadow-blue-200 hover:bg-blue-700"
           >
             开始使用
           </RouterLink>

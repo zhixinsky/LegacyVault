@@ -93,7 +93,7 @@ const shortcuts = [
         <button
           v-for="item in shortcuts"
           :key="item.to"
-          class="rounded-lg bg-blue-50 px-4 py-2 text-sm font-medium text-blue-700 hover:bg-blue-100"
+          class="rounded-xl bg-blue-50 px-4 py-2 text-sm font-semibold text-blue-700 shadow-sm ring-1 ring-blue-100 hover:bg-blue-100"
           @click="router.push(item.to)"
         >
           {{ item.label }}

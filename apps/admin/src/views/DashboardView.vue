@@ -48,7 +48,7 @@ async function handleScan() {
     <article class="rounded-[22px] border border-amber-100 bg-white p-6 shadow-sm">
       <p class="text-sm text-slate-500">今日高风险操作</p>
       <p class="mt-2 text-3xl font-bold text-amber-600">{{ loading ? '—' : stats.highRiskToday }}</p>
-      <router-link to="/security-alerts" class="mt-2 inline-block text-xs font-semibold text-blue-600 hover:underline">
+      <router-link to="/security-alerts" class="mt-3 inline-flex rounded-xl bg-blue-50 px-3 py-1.5 text-xs font-semibold text-blue-700 ring-1 ring-blue-100 hover:bg-blue-100">
         查看安全告警 →
       </router-link>
     </article>

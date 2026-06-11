@@ -318,6 +318,8 @@ async function submitMfa() {
 
 <style scoped>
 .login-page {
+  position: relative;
+  overflow: hidden;
   min-height: 100vh;
   display: grid;
   grid-template-columns: minmax(0, 1fr) 440px;
@@ -325,8 +327,10 @@ async function submitMfa() {
   align-items: center;
   padding: 56px clamp(24px, 6vw, 96px);
   background:
-    radial-gradient(circle at 20% 20%, rgba(64, 132, 255, 0.18), transparent 32%),
-    linear-gradient(135deg, #f8fbff 0%, #eef6ff 100%);
+    linear-gradient(135deg, rgba(248, 251, 255, 0.88), rgba(231, 244, 255, 0.86)),
+    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='1400' height='900' viewBox='0 0 1400 900'%3E%3Cdefs%3E%3CradialGradient id='a' cx='70%25' cy='35%25' r='45%25'%3E%3Cstop offset='0' stop-color='%236aa5ff' stop-opacity='.55'/%3E%3Cstop offset='.58' stop-color='%23bde2ff' stop-opacity='.18'/%3E%3Cstop offset='1' stop-color='%23ffffff' stop-opacity='0'/%3E%3C/radialGradient%3E%3ClinearGradient id='b' x1='0' x2='1' y1='0' y2='1'%3E%3Cstop stop-color='%23eaf4ff'/%3E%3Cstop offset='1' stop-color='%23f8fcff'/%3E%3C/linearGradient%3E%3C/defs%3E%3Crect width='1400' height='900' fill='url(%23b)'/%3E%3Ccircle cx='1000' cy='300' r='330' fill='url(%23a)'/%3E%3Cpath d='M760 306c82-94 222-118 331-56 109 62 156 193 111 310-45 118-169 184-291 156-123-28-210-143-204-269' fill='none' stroke='%238dbdff' stroke-width='2' stroke-opacity='.35'/%3E%3Cpath d='M880 230l116-54 116 54v130c0 88-53 166-116 200-63-34-116-112-116-200V230z' fill='%231667ff' fill-opacity='.18' stroke='%232c78ff' stroke-width='7'/%3E%3Cpath d='M946 352v-43c0-36 22-64 50-64s50 28 50 64v43' fill='none' stroke='%230b58d9' stroke-width='22' stroke-linecap='round' stroke-opacity='.7'/%3E%3Crect x='920' y='338' width='152' height='112' rx='30' fill='%230b67ff' fill-opacity='.72'/%3E%3Ccircle cx='996' cy='391' r='15' fill='white' fill-opacity='.85'/%3E%3Cpath d='M996 404v28' stroke='white' stroke-width='12' stroke-linecap='round' opacity='.85'/%3E%3C/svg%3E");
+  background-size: cover;
+  background-position: center;
 }
 
 .hero h1 {
@@ -360,7 +364,8 @@ async function submitMfa() {
   padding: 32px;
   border: 1px solid #e2e8f0;
   border-radius: 24px;
-  background: rgba(255, 255, 255, 0.92);
+  background: rgba(255, 255, 255, 0.9);
+  backdrop-filter: blur(18px);
   box-shadow: 0 24px 64px rgba(11, 31, 77, 0.12);
 }
 
@@ -381,10 +386,10 @@ async function submitMfa() {
 
 .method-tabs button {
   height: 42px;
-  border: 0;
-  border-radius: 12px;
-  color: #64748b;
-  background: transparent;
+  border: 1px solid transparent;
+  border-radius: 14px;
+  color: #3d5a7c;
+  background: #e8f2ff;
   font-size: 14px;
   font-weight: 700;
   cursor: pointer;

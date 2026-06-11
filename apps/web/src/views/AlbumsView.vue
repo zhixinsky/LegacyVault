@@ -370,7 +370,7 @@ function fileLabel(file: VaultFileItem) {
       <div class="flex flex-wrap items-center justify-between gap-3">
         <h2 class="font-semibold text-slate-900">相册内容</h2>
         <div v-if="selectedAlbumId" class="flex flex-wrap gap-2">
-          <label class="inline-flex cursor-pointer items-center rounded-lg bg-slate-200 px-3 py-2 text-sm font-medium text-slate-900 hover:bg-slate-300">
+          <label class="inline-flex cursor-pointer items-center rounded-xl bg-blue-50 px-3 py-2 text-sm font-semibold text-blue-700 shadow-sm ring-1 ring-blue-100 hover:bg-blue-100">
             {{ uploading ? '上传中...' : '上传图片' }}
             <input
               type="file"
@@ -380,20 +380,20 @@ function fileLabel(file: VaultFileItem) {
               @change="handleUpload($event, 'image')"
             />
           </label>
-          <label class="inline-flex cursor-pointer items-center rounded-lg bg-slate-200 px-3 py-2 text-sm font-medium text-slate-900 hover:bg-slate-300">
+          <label class="inline-flex cursor-pointer items-center rounded-xl bg-blue-50 px-3 py-2 text-sm font-semibold text-blue-700 shadow-sm ring-1 ring-blue-100 hover:bg-blue-100">
             {{ uploading ? '上传中...' : '上传视频' }}
             <input type="file" accept="video/*" class="hidden" @change="handleUpload($event, 'video')" />
           </label>
           <button
-            class="rounded-lg px-3 py-2 text-sm font-medium"
-            :class="selectMode ? 'bg-blue-600 text-white' : 'bg-slate-200 text-slate-900'"
+            class="rounded-xl px-3 py-2 text-sm font-semibold shadow-sm"
+            :class="selectMode ? 'bg-blue-600 text-white shadow-blue-200' : 'bg-slate-100 text-slate-700 ring-1 ring-slate-200 hover:bg-slate-200'"
             @click="toggleSelectMode"
           >
             {{ selectMode ? '取消多选' : '批量选择' }}
           </button>
           <button
             v-if="selectMode && selectedFileIds.size > 0"
-            class="rounded-lg bg-red-600 px-3 py-2 text-sm font-medium text-white"
+            class="rounded-xl bg-red-600 px-3 py-2 text-sm font-semibold text-white shadow-sm shadow-red-200 hover:bg-red-700"
             @click="handleBatchDelete"
           >
             删除 {{ selectedFileIds.size }} 项

@@ -72,8 +72,8 @@ function submitHeaderSearch() {
 </script>
 
 <template>
-  <div class="flex min-h-screen gap-6 bg-[#f3f7fc] p-6">
-    <aside class="flex w-72 shrink-0 flex-col rounded-[24px] border border-white/70 bg-white/95 shadow-[0_18px_50px_rgba(15,23,42,0.08)]">
+  <div class="flex min-h-screen gap-6 bg-[linear-gradient(135deg,#eef7ff_0%,#f8fbff_42%,#eefcf7_100%)] p-6">
+    <aside class="flex w-72 shrink-0 flex-col rounded-[24px] border border-white/70 bg-white/90 shadow-[0_18px_50px_rgba(15,23,42,0.08)] backdrop-blur">
       <div class="border-b border-slate-100 px-6 py-5">
         <div class="flex items-center gap-3">
           <div class="flex h-11 w-11 items-center justify-center rounded-2xl bg-blue-600 text-sm font-bold text-white shadow-lg shadow-blue-200">
@@ -87,7 +87,7 @@ function submitHeaderSearch() {
       </div>
 
       <nav class="flex-1 space-y-5 overflow-auto p-4">
-        <section v-for="group in navGroups" :key="group.title" class="rounded-2xl bg-slate-50/80 p-2">
+        <section v-for="group in navGroups" :key="group.title" class="rounded-2xl bg-gradient-to-br from-blue-50/80 via-white to-emerald-50/60 p-2">
           <p class="px-3 pb-2 text-[11px] font-bold uppercase tracking-wide text-slate-400">{{ group.title }}</p>
           <RouterLink
             v-for="item in group.items"
@@ -108,8 +108,8 @@ function submitHeaderSearch() {
       </div>
     </aside>
 
-    <main class="min-w-0 flex-1 overflow-auto rounded-[28px] border border-white/70 bg-white/70">
-      <header class="m-4 rounded-[22px] border border-white bg-white px-6 py-5 shadow-sm">
+    <main class="min-w-0 flex-1 overflow-auto rounded-[28px] border border-white/70 bg-gradient-to-br from-white/88 via-blue-50/55 to-emerald-50/45">
+      <header class="m-4 rounded-[22px] border border-white bg-white/90 px-6 py-5 shadow-sm backdrop-blur">
         <div class="flex flex-wrap items-start justify-between gap-4">
           <div>
             <h1 class="text-2xl font-bold text-slate-900">{{ pageTitle }}</h1>

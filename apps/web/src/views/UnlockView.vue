@@ -67,24 +67,24 @@ async function handleUnlock() {
 </script>
 
 <template>
-  <div class="flex min-h-screen items-center justify-center bg-slate-100 px-4">
-    <div class="w-full max-w-md rounded-2xl bg-white p-8 shadow-sm ring-1 ring-slate-200">
+  <div class="unlock-page px-4">
+    <div class="w-full max-w-md rounded-[28px] bg-white/90 p-8 shadow-[0_28px_80px_rgba(11,31,77,0.16)] ring-1 ring-white/80 backdrop-blur">
       <h1 class="text-2xl font-bold text-slate-900">解锁保险箱</h1>
       <p class="mt-2 text-sm text-slate-500">密钥仅在本地使用，不会发送到服务器</p>
 
-      <div class="mt-6 flex gap-2 rounded-lg bg-slate-100 p-1">
+      <div class="mt-6 flex gap-2 rounded-2xl bg-blue-50 p-1.5">
         <button
           type="button"
-          class="flex-1 rounded-md py-2 text-sm"
-          :class="mode === 'master' ? 'bg-white font-medium text-slate-900 shadow-sm' : 'text-slate-500'"
+          class="flex-1 rounded-xl px-4 py-2.5 text-sm font-semibold transition"
+          :class="mode === 'master' ? 'bg-white text-blue-700 shadow-sm ring-1 ring-blue-100' : 'bg-blue-100/70 text-slate-600 hover:bg-blue-100'"
           @click="mode = 'master'"
         >
           主密码
         </button>
         <button
           type="button"
-          class="flex-1 rounded-md py-2 text-sm disabled:opacity-50"
-          :class="mode === 'recovery' ? 'bg-white font-medium text-slate-900 shadow-sm' : 'text-slate-500'"
+          class="flex-1 rounded-xl px-4 py-2.5 text-sm font-semibold transition disabled:opacity-50"
+          :class="mode === 'recovery' ? 'bg-white text-blue-700 shadow-sm ring-1 ring-blue-100' : 'bg-blue-100/70 text-slate-600 hover:bg-blue-100'"
           :disabled="!recoveryConfigured"
           @click="mode = 'recovery'"
         >
@@ -122,4 +122,19 @@ async function handleUnlock() {
       </VButton>
     </div>
   </div>
-</template>
+</template>
+
+<style scoped>
+.unlock-page {
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  background:
+    linear-gradient(135deg, rgba(247, 251, 255, 0.9), rgba(232, 245, 255, 0.86)),
+    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='1300' height='850' viewBox='0 0 1300 850'%3E%3Cdefs%3E%3CradialGradient id='g' cx='50%25' cy='45%25' r='50%25'%3E%3Cstop offset='0' stop-color='%2368a4ff' stop-opacity='.55'/%3E%3Cstop offset='.65' stop-color='%23d8ecff' stop-opacity='.25'/%3E%3Cstop offset='1' stop-color='%23ffffff' stop-opacity='0'/%3E%3C/radialGradient%3E%3ClinearGradient id='s' x1='0' x2='1' y1='0' y2='1'%3E%3Cstop stop-color='%23f5fbff'/%3E%3Cstop offset='1' stop-color='%23eaf5ff'/%3E%3C/linearGradient%3E%3C/defs%3E%3Crect width='1300' height='850' fill='url(%23s)'/%3E%3Ccircle cx='660' cy='390' r='360' fill='url(%23g)'/%3E%3Crect x='730' y='245' width='260' height='240' rx='48' fill='%231667ff' fill-opacity='.16' stroke='%232b74ff' stroke-width='7'/%3E%3Cpath d='M800 245v-44c0-72 44-125 98-125s98 53 98 125v44' fill='none' stroke='%231667ff' stroke-width='25' stroke-linecap='round' stroke-opacity='.45'/%3E%3Ccircle cx='860' cy='365' r='28' fill='%231667ff' fill-opacity='.55'/%3E%3Cpath d='M220 550c240-132 466-136 680-12' fill='none' stroke='%238dbdff' stroke-width='3' stroke-opacity='.4'/%3E%3Cpath d='M260 250c162-72 321-62 476 30' fill='none' stroke='%238bd5d1' stroke-width='3' stroke-opacity='.32'/%3E%3C/svg%3E");
+  background-size: cover;
+  background-position: center;
+}
+</style>
