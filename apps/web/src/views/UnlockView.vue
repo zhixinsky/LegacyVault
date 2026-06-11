@@ -3,13 +3,17 @@ import { onMounted, ref } from 'vue';
 import { useRouter } from 'vue-router';
 import { VButton } from '@vaultpass/ui';
 import { vaultSession } from '@/utils/api';
-import { unlockVaultWithMasterPassword, unlockVaultWithRecoveryKey } from '@/utils/crypto-flow';
-import { getProfile, heartbeat } from '@/utils/services';
+import { buildRecoveredMasterPasswordPayload, unlockVaultWithMasterPassword } from '@/utils/crypto-flow';
+import { getProfile, heartbeat, recoverMasterPassword } from '@/utils/services';
 
 const router = useRouter();
 const mode = ref<'master' | 'recovery'>('master');
 const masterPassword = ref('');
-const recoveryPassphrase = ref('');
+const recoveryPassphrase = ref('');
+
+const newMasterPassword = ref('');
+
+const confirmMasterPassword = ref('');
 const recoveryConfigured = ref(false);
 const recoveryHint = ref('');
 const loading = ref(false);
@@ -41,29 +45,81 @@ onMounted(async () => {
   }
 });
 
-async function handleUnlock() {
-  loading.value = true;
-  error.value = '';
-  try {
-    if (mode.value === 'master') {
-      await unlockVaultWithMasterPassword(masterPassword.value);
-      masterPassword.value = '';
-    } else {
-      const bundle = vaultSession.getRecoveryBundle();
-      if (!bundle) {
-        throw new Error('未配置恢复密钥');
-      }
-      await unlockVaultWithRecoveryKey(recoveryPassphrase.value, bundle);
-      recoveryPassphrase.value = '';
-    }
-    await heartbeat().catch(() => undefined);
-    router.replace('/app/dashboard');
-  } catch (err) {
-    error.value = err instanceof Error ? err.message : '解锁失败';
-  } finally {
-    loading.value = false;
-  }
-}
+async function handleUnlock() {
+
+  loading.value = true;
+
+  error.value = '';
+
+  try {
+
+    if (mode.value === 'master') {
+
+      await unlockVaultWithMasterPassword(masterPassword.value);
+
+      masterPassword.value = '';
+
+    } else {
+
+      const bundle = vaultSession.getRecoveryBundle();
+
+      if (!bundle) {
+
+        throw new Error('未配置恢复密钥');
+
+      }
+
+      if (newMasterPassword.value.length < 12) {
+
+        throw new Error('新主密码至少 12 位');
+
+      }
+
+      if (newMasterPassword.value !== confirmMasterPassword.value) {
+
+        throw new Error('两次输入的新主密码不一致');
+
+      }
+
+      const recovered = await buildRecoveredMasterPasswordPayload(
+
+        recoveryPassphrase.value,
+
+        bundle,
+
+        newMasterPassword.value,
+
+      );
+
+      await recoverMasterPassword(recovered.payload);
+
+      vaultSession.setKeyBundle(recovered.keyBundle);
+
+      vaultSession.setVaultKey(recovered.vaultKey);
+
+      recoveryPassphrase.value = '';
+
+      newMasterPassword.value = '';
+
+      confirmMasterPassword.value = '';
+
+    }
+
+    await heartbeat().catch(() => undefined);
+
+    router.replace('/app/dashboard');
+
+  } catch (err) {
+
+    error.value = err instanceof Error ? err.message : '解锁失败';
+
+  } finally {
+
+    loading.value = false;
+
+  }
+
+}
 </script>
 
 <template>
@@ -88,7 +144,7 @@ async function handleUnlock() {
           :disabled="!recoveryConfigured"
           @click="mode = 'recovery'"
         >
-          恢复密钥
+          忘记主密码
         </button>
       </div>
 
@@ -103,22 +159,48 @@ async function handleUnlock() {
         />
       </template>
 
-      <template v-else>
-        <p v-if="recoveryHint" class="mt-4 text-sm text-slate-500">提示：{{ recoveryHint }}</p>
-        <label class="mt-4 block text-sm font-medium text-slate-700">恢复密钥</label>
-        <input
-          v-model="recoveryPassphrase"
-          type="password"
-          class="mt-2 w-full rounded-lg border border-slate-300 px-3 py-2 outline-none focus:border-blue-500"
-          placeholder="请输入恢复密钥"
-          @keyup.enter="handleUnlock"
-        />
+      <template v-else>
+
+        <div class="mt-4 rounded-xl bg-amber-50 p-3 text-sm text-amber-800">
+          恢复密钥只用于找回访问权限。验证成功后必须设置新的主密码，之后仍使用主密码解锁保险箱。
+        </div>
+
+        <p v-if="recoveryHint" class="mt-4 text-sm text-slate-500">提示：{{ recoveryHint }}</p>
+
+        <label class="mt-4 block text-sm font-medium text-slate-700">恢复密钥</label>
+
+        <input
+          v-model="recoveryPassphrase"
+          type="password"
+          class="mt-2 w-full rounded-lg border border-slate-300 px-3 py-2 outline-none focus:border-blue-500"
+          placeholder="请输入恢复密钥"
+        />
+
+        <label class="mt-4 block text-sm font-medium text-slate-700">新主密码</label>
+
+        <input
+          v-model="newMasterPassword"
+          type="password"
+          class="mt-2 w-full rounded-lg border border-slate-300 px-3 py-2 outline-none focus:border-blue-500"
+          placeholder="至少 12 位的新主密码"
+        />
+
+        <label class="mt-4 block text-sm font-medium text-slate-700">确认新主密码</label>
+
+        <input
+          v-model="confirmMasterPassword"
+          type="password"
+          class="mt-2 w-full rounded-lg border border-slate-300 px-3 py-2 outline-none focus:border-blue-500"
+          placeholder="再次输入新主密码"
+          @keyup.enter="handleUnlock"
+        />
+
       </template>
 
       <p v-if="error" class="mt-3 text-sm text-red-600">{{ error }}</p>
 
       <VButton class="mt-6 !w-full" variant="primary" :disabled="loading" @click="handleUnlock">
-        {{ loading ? '解锁中...' : '解锁' }}
+        {{ loading ? '处理中...' : mode === 'master' ? '解锁保险箱' : '重置主密码并进入' }}
       </VButton>
     </div>
   </div>

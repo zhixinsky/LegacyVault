@@ -160,6 +160,18 @@ export function createVault(payload: {
   });
 }
 
+export function recoverMasterPassword(payload: {
+  encryptedVaultKey: string;
+  passwordSalt: string;
+  kdfParams: NonNullable<AuthResult['vaultKeyBundle']>['kdfParams'];
+}) {
+  return request<{ recovered: boolean }>({
+    url: '/vault/recover-master-password',
+    method: 'POST',
+    data: payload,
+  });
+}
+
 export function heartbeat() {
   return request<{ lastLoginAt?: string }>({
     url: '/users/me/heartbeat',

@@ -17,6 +17,7 @@ import {
   CreateVaultItemDto,
   CreateVaultDto,
   ListVaultItemsQueryDto,
+  RecoverMasterPasswordDto,
   UpdateVaultItemDto,
 } from './dto/vault.dto';
 import { VaultService } from './vault.service';
@@ -32,6 +33,15 @@ export class VaultSetupController {
     @Req() req: Request,
   ) {
     return this.vaultService.createVault(user.userId, dto, getRequestMeta(req));
+  }
+
+  @Post('recover-master-password')
+  recoverMasterPassword(
+    @CurrentUser() user: AuthUser,
+    @Body() dto: RecoverMasterPasswordDto,
+    @Req() req: Request,
+  ) {
+    return this.vaultService.recoverMasterPassword(user.userId, dto, getRequestMeta(req));
   }
 }
 

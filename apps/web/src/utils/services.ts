@@ -131,6 +131,18 @@ export function createVault(payload: {
   });
 }
 
+export function recoverMasterPassword(payload: {
+  encryptedVaultKey: string;
+  passwordSalt: string;
+  kdfParams: NonNullable<AuthResult['vaultKeyBundle']>['kdfParams'];
+}) {
+  return request<{ recovered: boolean }>({
+    url: '/vault/recover-master-password',
+    method: 'POST',
+    body: payload,
+  });
+}
+
 export function sendEmailLoginCode(email: string) {
   return request<{ success: boolean }>({
     url: '/auth/send-email-code',

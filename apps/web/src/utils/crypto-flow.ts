@@ -223,6 +223,30 @@ export async function unlockVaultWithRecoveryKey(
   return vaultKey;
 }
 
+export async function buildRecoveredMasterPasswordPayload(
+  recoveryPassphrase: string,
+  encryptedVaultKeyByRecovery: string,
+  newMasterPassword: string,
+) {
+  const vaultKey = await unlockVaultWithRecoveryKey(recoveryPassphrase, encryptedVaultKeyByRecovery);
+  const master = deriveMasterKey(newMasterPassword);
+  const encryptedVaultKey = await encryptVaultKey(vaultKey, master.masterKey);
+
+  return {
+    vaultKey,
+    keyBundle: {
+      encryptedVaultKey,
+      kdfSalt: master.kdfSalt,
+      kdfParams: master.kdfParams,
+    },
+    payload: {
+      encryptedVaultKey,
+      passwordSalt: master.kdfSalt,
+      kdfParams: master.kdfParams,
+    },
+  };
+}
+
 export async function decryptContactVaultKey(encryptedVaultKeyForContact: string, answer: string) {
   const payload = await decryptJson<{ vaultKey: string }>(
     encryptedVaultKeyForContact,

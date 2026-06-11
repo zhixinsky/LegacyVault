@@ -434,7 +434,7 @@ async function handleRevokeDevice(id: string) {
 
       <h2 class="text-xl font-bold text-slate-900">恢复密钥</h2>
 
-      <p class="mt-2 text-sm text-slate-500">忘记主密码时，可用恢复密钥解锁保险箱（请离线妥善保存）</p>
+      <p class="mt-2 text-sm text-slate-500">忘记主密码时，可用恢复密钥重置主密码（请离线妥善保存）</p>
 
       <p v-if="recoveryConfigured" class="mt-2 text-sm text-emerald-600">
 

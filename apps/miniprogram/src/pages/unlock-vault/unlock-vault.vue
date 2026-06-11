@@ -3,14 +3,16 @@ import { onLoad } from '@dcloudio/uni-app';
 import { ref } from 'vue';
 import { vaultSession } from '@/utils/api';
 import {
+  buildRecoveredMasterPasswordPayload,
   unlockVaultWithMasterPassword,
-  unlockVaultWithRecoveryKey,
 } from '@/utils/crypto-flow';
-import { getProfile, heartbeat } from '@/utils/services';
+import { getProfile, heartbeat, recoverMasterPassword } from '@/utils/services';
 
 const unlockMode = ref<'master' | 'recovery'>('master');
 const masterPassword = ref('');
 const recoveryKey = ref('');
+const newMasterPassword = ref('');
+const confirmMasterPassword = ref('');
 const recoveryConfigured = ref(false);
 const loading = ref(false);
 
@@ -44,6 +46,14 @@ async function handleUnlock() {
     uni.showToast({ title: '请输入恢复密钥', icon: 'none' });
     return;
   }
+  if (unlockMode.value === 'recovery' && newMasterPassword.value.length < 12) {
+    uni.showToast({ title: '新主密码至少 12 位', icon: 'none' });
+    return;
+  }
+  if (unlockMode.value === 'recovery' && newMasterPassword.value !== confirmMasterPassword.value) {
+    uni.showToast({ title: '两次输入的新主密码不一致', icon: 'none' });
+    return;
+  }
 
   loading.value = true;
   try {
@@ -52,11 +62,20 @@ async function handleUnlock() {
     } else {
       const bundle = vaultSession.getRecoveryBundle();
       if (!bundle) throw new Error('未配置恢复密钥');
-      await unlockVaultWithRecoveryKey(recoveryKey.value, bundle);
+      const recovered = await buildRecoveredMasterPasswordPayload(
+        recoveryKey.value,
+        bundle,
+        newMasterPassword.value,
+      );
+      await recoverMasterPassword(recovered.payload);
+      vaultSession.setKeyBundle(recovered.keyBundle);
+      vaultSession.setVaultKey(recovered.vaultKey);
     }
 
     masterPassword.value = '';
     recoveryKey.value = '';
+    newMasterPassword.value = '';
+    confirmMasterPassword.value = '';
     await heartbeat().catch(() => undefined);
     uni.switchTab({ url: '/pages/vault/vault' });
   } catch (error) {
@@ -93,7 +112,7 @@ function goLogin() {
           :disabled="!recoveryConfigured"
           @tap="unlockMode = 'recovery'"
         >
-          恢复密钥
+          忘记主密码
         </button>
       </view>
 
@@ -109,6 +128,9 @@ function goLogin() {
       </template>
 
       <template v-else>
+        <view class="recovery-tip">
+          <text>恢复密钥只用于找回访问权限。验证成功后必须设置新的主密码，之后仍使用主密码解锁保险箱。</text>
+        </view>
         <text class="field-label">恢复密钥</text>
         <input
           v-model="recoveryKey"
@@ -117,13 +139,31 @@ function goLogin() {
           placeholder="请输入恢复密钥"
           placeholder-class="placeholder"
         />
+        <text class="field-label">新主密码</text>
+        <input
+          v-model="newMasterPassword"
+          class="input"
+          password
+          placeholder="至少 12 位的新主密码"
+          placeholder-class="placeholder"
+        />
+        <text class="field-label">确认新主密码</text>
+        <input
+          v-model="confirmMasterPassword"
+          class="input"
+          password
+          placeholder="再次输入新主密码"
+          placeholder-class="placeholder"
+        />
       </template>
 
       <view class="tip-card">
-        <text>平台无法查看或恢复您的保险箱内容。账号可找回，但保险箱必须由主密码或恢复密钥解锁。</text>
+        <text>平台无法查看或恢复您的保险箱内容。日常解锁请使用主密码；恢复密钥仅用于忘记主密码时重置主密码。</text>
       </view>
 
-      <button class="primary-button" :loading="loading" @tap="handleUnlock">解锁并进入保险箱</button>
+      <button class="primary-button" :loading="loading" @tap="handleUnlock">
+        {{ unlockMode === 'master' ? '解锁并进入保险箱' : '重置主密码并进入' }}
+      </button>
       <button class="ghost-button" @tap="goLogin">切换账号</button>
     </view>
   </view>
@@ -217,6 +257,16 @@ button::after { border: none; }
   color: #0b1f4d;
   font-size: 29rpx;
   font-weight: 900;
+}
+
+.recovery-tip {
+  margin-top: 28rpx;
+  padding: 22rpx;
+  border-radius: 20rpx;
+  background: #fff7ed;
+  color: #9a3412;
+  font-size: 24rpx;
+  line-height: 1.55;
 }
 
 .input {

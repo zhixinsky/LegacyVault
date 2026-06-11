@@ -47,6 +47,21 @@ export class CreateVaultDto {
   kdfParams!: VaultKdfParamsDto;
 }
 
+export class RecoverMasterPasswordDto {
+  @IsString()
+  @IsNotEmpty()
+  encryptedVaultKey!: string;
+
+  @IsString()
+  @IsNotEmpty()
+  passwordSalt!: string;
+
+  @IsObject()
+  @ValidateNested()
+  @Type(() => VaultKdfParamsDto)
+  kdfParams!: VaultKdfParamsDto;
+}
+
 export class CreateVaultItemDto {
   @IsEnum(VaultItemType)
   type!: VaultItemType;

@@ -8,6 +8,7 @@ import {
   CreateVaultItemDto,
   CreateVaultDto,
   ListVaultItemsQueryDto,
+  RecoverMasterPasswordDto,
   UpdateVaultItemDto,
 } from './dto/vault.dto';
 
@@ -59,6 +60,41 @@ export class VaultService {
     });
 
     return { created: true, hasVault: true };
+  }
+
+  async recoverMasterPassword(
+    userId: string,
+    dto: RecoverMasterPasswordDto,
+    meta: { ip?: string; device?: string },
+  ) {
+    const user = await this.prisma.user.findUnique({
+      where: { id: userId },
+      select: { hasVault: true },
+    });
+
+    if (!user?.hasVault) {
+      throw new BadRequestException('保险箱尚未创建');
+    }
+
+    await this.prisma.user.update({
+      where: { id: userId },
+      data: {
+        encryptedVaultKey: dto.encryptedVaultKey,
+        passwordSalt: dto.passwordSalt,
+        kdfParams: dto.kdfParams as unknown as Prisma.InputJsonValue,
+      },
+    });
+
+    await this.auditLogService.log({
+      userId,
+      actorId: userId,
+      action: 'vault.master_password.recover',
+      ip: meta.ip,
+      device: meta.device,
+      riskLevel: AuditRiskLevel.critical,
+    });
+
+    return { recovered: true };
   }
 
   async list(userId: string, query: ListVaultItemsQueryDto) {
@@ -250,7 +286,7 @@ export class VaultService {
     await this.mfaService.assertMfaIfEnabled(userId, meta.mfaCode);
     const item = await this.getById(userId, id);
 
-    if (item.type !== 'password') {
+    if (!['password', 'email_account', 'server_account'].includes(item.type)) {
       throw new BadRequestException('仅支持查看账号密码条目');
     }
 
