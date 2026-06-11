@@ -14,6 +14,7 @@ import {
   loginMfa,
   loginWithCode,
   persistAuthResult,
+  register,
   sendLoginCode,
 } from '@/utils/services';
 
@@ -67,7 +68,7 @@ function startCountdown() {
 
 
 
-function goRegister() {
+async function goRegister() {
 
   if (!/^1\d{10}$/.test(phone.value)) {
 
@@ -80,8 +81,16 @@ function goRegister() {
   error.value = '';
 
   vaultSession.setPendingPhone(phone.value);
-
-  router.push('/setup-password');
+  loading.value = true;
+  try {
+    const result = await register({ phone: phone.value });
+    persistAuthResult(result);
+    router.push('/create-vault-password');
+  } catch (err) {
+    error.value = err instanceof Error ? err.message : '注册失败';
+  } finally {
+    loading.value = false;
+  }
 
 }
 
@@ -166,7 +175,7 @@ async function goLogin() {
 
     persistAuthResult(result);
     vaultSession.setPendingPhone(phone.value);
-    router.push('/unlock');
+    router.push(!result.user.hasVault || !result.vaultKeyBundle ? '/create-vault-password' : '/unlock');
 
   } catch (err) {
 
@@ -189,7 +198,7 @@ async function submitMfa() {
     const result = await loginMfa(mfaPendingId.value, mfaCode.value);
     persistAuthResult(result);
     vaultSession.setPendingPhone(phone.value);
-    router.push('/unlock');
+    router.push(!result.user.hasVault || !result.vaultKeyBundle ? '/create-vault-password' : '/unlock');
   } catch (err) {
     error.value = err instanceof Error ? err.message : '验证失败';
   } finally {

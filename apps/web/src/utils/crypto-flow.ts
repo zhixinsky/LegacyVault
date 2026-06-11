@@ -5,11 +5,15 @@ import {
   decryptFile,
   decryptJson,
   decryptVaultKey,
+  deriveMasterKey,
+  deriveRecoveryKey as deriveRecoveryKeyByPhrase,
   deriveMasterKeyByPassword,
   encryptFile,
   encryptJson,
   encryptVaultKey,
+  encryptVaultKeyByRecovery,
   generateFileKey,
+  generateRecoveryKey,
   generateVaultKey,
   hashChallengeAnswer,
   normalizeChallengeAnswer,
@@ -29,6 +33,36 @@ export async function registerWithMasterPassword(phone: string, masterPassword: 
       encryptedVaultKey,
       kdfSalt: derived.kdfSalt,
       kdfParams: derived.kdfParams,
+    },
+  };
+}
+
+export async function buildCreateVaultPayload(masterPassword: string) {
+  const vaultKey = generateVaultKey();
+  const recoveryKey = generateRecoveryKey();
+  const master = deriveMasterKey(masterPassword);
+  const recovery = deriveRecoveryKeyByPhrase(recoveryKey);
+  const encryptedVaultKey = await encryptVaultKey(vaultKey, master.masterKey);
+  const encryptedVaultKeyByRecovery = await encryptVaultKeyByRecovery(
+    vaultKey,
+    recovery.masterKey,
+  );
+
+  return {
+    vaultKey,
+    recoveryKey,
+    keyBundle: {
+      encryptedVaultKey,
+      kdfSalt: master.kdfSalt,
+      kdfParams: master.kdfParams,
+    },
+    recoveryBundle: encryptedVaultKeyByRecovery,
+    createPayload: {
+      encryptedVaultKey,
+      encryptedVaultKeyByRecovery,
+      passwordSalt: master.kdfSalt,
+      recoverySalt: recovery.kdfSalt,
+      kdfParams: master.kdfParams,
     },
   };
 }

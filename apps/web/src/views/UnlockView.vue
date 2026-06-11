@@ -20,9 +20,13 @@ onMounted(async () => {
     recoveryConfigured.value = true;
     return;
   }
-  try {
-    const profile = await getProfile();
-    recoveryConfigured.value = profile.recoveryKeyConfigured ?? false;
+  try {
+    const profile = await getProfile();
+    if (!profile.hasVault) {
+      router.replace('/create-vault-password');
+      return;
+    }
+    recoveryConfigured.value = profile.recoveryKeyConfigured ?? false;
     recoveryHint.value = profile.recoveryKeyHint ?? '';
     if (profile.encryptedVaultKeyByRecovery) {
       vaultSession.setRecoveryBundle(profile.encryptedVaultKeyByRecovery);

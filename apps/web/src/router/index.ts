@@ -4,7 +4,9 @@ import AppLayout from '@/layouts/AppLayout.vue';
 import HomeView from '@/views/HomeView.vue';
 import LoginView from '@/views/LoginView.vue';
 import ScanLoginView from '@/views/ScanLoginView.vue';
-import SetupPasswordView from '@/views/SetupPasswordView.vue';
+import CreateVaultPasswordView from '@/views/CreateVaultPasswordView.vue';
+import RecoveryKeyConfirmView from '@/views/RecoveryKeyConfirmView.vue';
+import RecoveryKeyDisplayView from '@/views/RecoveryKeyDisplayView.vue';
 import UnlockView from '@/views/UnlockView.vue';
 import DashboardView from '@/views/DashboardView.vue';
 import PasswordsView from '@/views/PasswordsView.vue';
@@ -34,7 +36,9 @@ const router = createRouter({
     { path: '/', name: 'home', component: HomeView },
     { path: '/login', name: 'login', component: LoginView, meta: { guest: true } },
     { path: '/scan-login', name: 'scan-login', component: ScanLoginView, meta: { guest: true } },
-    { path: '/setup-password', name: 'setup-password', component: SetupPasswordView, meta: { guest: true } },
+    { path: '/create-vault-password', name: 'create-vault-password', component: CreateVaultPasswordView, meta: { requiresAuth: true } },
+    { path: '/recovery-key-display', name: 'recovery-key-display', component: RecoveryKeyDisplayView, meta: { requiresAuth: true } },
+    { path: '/recovery-key-confirm', name: 'recovery-key-confirm', component: RecoveryKeyConfirmView, meta: { requiresAuth: true } },
     { path: '/unlock', name: 'unlock', component: UnlockView, meta: { requiresAuth: true } },
     { path: '/contact-takeover', name: 'contact-takeover', component: ContactTakeoverView, meta: { guest: true } },
     { path: '/contact-vault', name: 'contact-vault', component: ContactVaultView, meta: { guest: true } },
@@ -83,7 +87,7 @@ router.beforeEach((to) => {
     return '/login';
   }
 
-  if (to.meta.guest && token && hasVault && (to.path === '/login' || to.path === '/scan-login' || to.path === '/setup-password')) {
+  if (to.meta.guest && token && hasVault && (to.path === '/login' || to.path === '/scan-login')) {
     return '/app/dashboard';
   }
 
