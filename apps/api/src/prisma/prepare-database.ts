@@ -96,17 +96,69 @@ async function ensureUserSchema(config: {
   });
 
   try {
-    const [columns] = await connection.query(
-      `SELECT COLUMN_NAME AS columnName
-       FROM information_schema.COLUMNS
-       WHERE TABLE_SCHEMA = ? AND TABLE_NAME = 'users' AND COLUMN_NAME = 'username'`,
-      [config.database],
-    );
+    const hasColumn = async (columnName: string) => {
+      const [columns] = await connection.query(
+        `SELECT COLUMN_NAME AS columnName
+         FROM information_schema.COLUMNS
+         WHERE TABLE_SCHEMA = ? AND TABLE_NAME = 'users' AND COLUMN_NAME = ?`,
+        [config.database, columnName],
+      );
+      return (columns as Array<{ columnName: string }>).length > 0;
+    };
 
-    if ((columns as Array<{ columnName: string }>).length === 0) {
+    if (!(await hasColumn('username'))) {
       console.log('[database] 检测到 users.username 缺失，开始添加字段');
       await connection.query('ALTER TABLE `users` ADD COLUMN `username` VARCHAR(64) NULL');
       console.log('[database] users.username 字段添加完成');
+    }
+
+    if (!(await hasColumn('has_vault'))) {
+      console.log('[database] 检测到 users.has_vault 缺失，开始添加字段');
+      await connection.query(
+        'ALTER TABLE `users` ADD COLUMN `has_vault` BOOLEAN NOT NULL DEFAULT false',
+      );
+      await connection.query(
+        'UPDATE `users` SET `has_vault` = true WHERE `encrypted_vault_key` IS NOT NULL',
+      );
+      console.log('[database] users.has_vault 字段添加并回填完成');
+    }
+
+    if (await hasColumn('encrypted_vault_key')) {
+      await connection.query('ALTER TABLE `users` MODIFY COLUMN `encrypted_vault_key` LONGTEXT NULL');
+    }
+
+    if (await hasColumn('kdf_salt')) {
+      await connection.query('ALTER TABLE `users` MODIFY COLUMN `kdf_salt` VARCHAR(128) NULL');
+    }
+
+    if (await hasColumn('kdf_params')) {
+      await connection.query('ALTER TABLE `users` MODIFY COLUMN `kdf_params` JSON NULL');
+    }
+
+    if (!(await hasColumn('password_salt'))) {
+      console.log('[database] 检测到 users.password_salt 缺失，开始添加字段');
+      await connection.query('ALTER TABLE `users` ADD COLUMN `password_salt` VARCHAR(128) NULL');
+      if (await hasColumn('kdf_salt')) {
+        await connection.query(
+          'UPDATE `users` SET `password_salt` = `kdf_salt` WHERE `password_salt` IS NULL',
+        );
+      }
+      console.log('[database] users.password_salt 字段添加并回填完成');
+    }
+
+    if (!(await hasColumn('recovery_salt'))) {
+      console.log('[database] 检测到 users.recovery_salt 缺失，开始添加字段');
+      await connection.query('ALTER TABLE `users` ADD COLUMN `recovery_salt` VARCHAR(128) NULL');
+      console.log('[database] users.recovery_salt 字段添加完成');
+    }
+
+    if (!(await hasColumn('vault_created_at'))) {
+      console.log('[database] 检测到 users.vault_created_at 缺失，开始添加字段');
+      await connection.query('ALTER TABLE `users` ADD COLUMN `vault_created_at` DATETIME NULL');
+      await connection.query(
+        'UPDATE `users` SET `vault_created_at` = `created_at` WHERE `vault_created_at` IS NULL AND `encrypted_vault_key` IS NOT NULL',
+      );
+      console.log('[database] users.vault_created_at 字段添加并回填完成');
     }
 
     const [indexes] = await connection.query(
