@@ -14,9 +14,13 @@ import {
 
   LoginDto,
 
+  LoginWithEmailCodeDto,
+
   LoginMfaDto,
 
   LoginWithCodeDto,
+
+  LoginWithPasswordDto,
 
   RegisterDto,
 
@@ -25,6 +29,8 @@ import {
   ScanMfaDto,
 
   SendCodeDto,
+
+  SendEmailCodeDto,
 
   WechatPhoneDto,
 
@@ -81,11 +87,47 @@ export class AuthController {
 
   @Public()
 
+  @Post('send-email-code')
+
+  sendEmailCode(@Body() dto: SendEmailCodeDto, @Req() req: Request) {
+
+    return this.authService.sendEmailCode(dto, getRequestMeta(req));
+
+  }
+
+
+
+  @Public()
+
   @Post('login-with-code')
 
   loginWithCode(@Body() dto: LoginWithCodeDto, @Req() req: Request) {
 
     return this.authService.loginWithCode(dto, getRequestMeta(req));
+
+  }
+
+
+
+  @Public()
+
+  @Post('login-with-email-code')
+
+  loginWithEmailCode(@Body() dto: LoginWithEmailCodeDto, @Req() req: Request) {
+
+    return this.authService.loginWithEmailCode(dto, getRequestMeta(req));
+
+  }
+
+
+
+  @Public()
+
+  @Post('login-with-password')
+
+  loginWithPassword(@Body() dto: LoginWithPasswordDto, @Req() req: Request) {
+
+    return this.authService.loginWithPassword(dto, getRequestMeta(req));
 
   }
 

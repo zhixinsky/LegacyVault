@@ -69,6 +69,7 @@ enum ContactTakeoverSessionStatus {
 
 model User {
   id                 String     @id @default(cuid())
+  username           String?    @unique @db.VarChar(64)
   phone              String?    @unique
   email              String?    @unique
   wxOpenid           String?    @unique @map("wx_openid")

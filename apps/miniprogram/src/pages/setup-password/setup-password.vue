@@ -58,24 +58,29 @@ async function handleSubmit() {
   loading.value = true;
   try {
     if (mode.value === 'register') {
-      const phone = vaultSession.getPendingPhone();
-      if (!phone) {
-        throw new Error('缺少手机号，请返回登录页');
+      const wxCode = vaultSession.getPendingWxCode();
+      const identity = {
+        phone: vaultSession.getPendingPhone() || undefined,
+        email: vaultSession.getPendingEmail() || undefined,
+        username: vaultSession.getPendingUsername() || undefined,
+        password: vaultSession.getPendingPassword() || undefined,
+      };
+
+      if (!identity.phone && !identity.email && !identity.username && !wxCode) {
+        throw new Error('缺少注册身份，请返回登录页');
       }
 
       const { vaultKey, registerPayload } = await registerWithMasterPassword(
-        phone,
+        identity,
         masterPassword.value,
       );
-      const wxCode = vaultSession.getPendingWxCode();
       const result = await register({
         ...registerPayload,
         ...(wxCode ? { wxCode } : {}),
       });
       persistAuthResult(result);
       vaultSession.setVaultKey(vaultKey);
-      vaultSession.clearPendingPhone();
-      vaultSession.clearPendingWxCode();
+      vaultSession.clearPendingRegisterIdentity();
     } else if (unlockMode.value === 'master') {
       await unlockVaultWithMasterPassword(masterPassword.value);
       await import('@/utils/services').then((m) => m.heartbeat());

@@ -22,11 +22,13 @@ import {
 
 } from '@nestjs/common';
 
-import { randomBytes } from 'crypto';
+import { randomBytes, scryptSync, timingSafeEqual } from 'crypto';
 
+import { ConfigService } from '@nestjs/config';
 import { JwtService } from '@nestjs/jwt';
 
 import { AuditRiskLevel, Prisma, UserStatus } from '@prisma/client';
+import nodemailer from 'nodemailer';
 
 import { PrismaService } from '../../prisma/prisma.service';
 
@@ -44,9 +46,15 @@ import {
 
   LoginDto,
 
+  LoginWithEmailCodeDto,
+
   LoginWithCodeDto,
 
+  LoginWithPasswordDto,
+
   RegisterDto,
+
+  SendEmailCodeDto,
 
   SendCodeDto,
 
@@ -89,7 +97,7 @@ export type AuthLoginResult =
 
   | Awaited<ReturnType<AuthService['buildAuthResponse']>>
 
-  | { registered: false; phone?: string }
+  | { registered: false; phone?: string; email?: string; username?: string }
 
   | { mfaRequired: true; pendingId: string };
 
@@ -106,12 +114,15 @@ export class AuthService {
   private readonly codeStore = new Map<string, CodeEntry>();
 
   private readonly pendingMfaLogins = new Map<string, PendingMfaLogin>();
+  private mailTransporter: nodemailer.Transporter | null = null;
 
   constructor(
 
     private readonly prisma: PrismaService,
 
     private readonly jwtService: JwtService,
+
+    private readonly config: ConfigService,
 
     private readonly auditLogService: AuditLogService,
 
@@ -140,9 +151,9 @@ export class AuthService {
   async register(dto: RegisterDto, meta: { ip?: string; device?: string }) {
     await this.ipBlacklistService.assertAllowed(meta.ip);
 
-    if (!dto.phone && !dto.email) {
+    if (!dto.phone && !dto.email && !dto.username && !dto.wxCode) {
 
-      throw new BadRequestException('手机号或邮箱至少填写一项');
+      throw new BadRequestException('手机号、邮箱、用户名或微信身份至少填写一项');
 
     }
 
@@ -160,15 +171,27 @@ export class AuthService {
 
     }
 
-
-
     if (dto.email) {
 
       const exists = await this.prisma.user.findUnique({ where: { email: dto.email } });
 
       if (exists) {
 
-        throw new ConflictException('邮箱已注册');
+        throw new ConflictException('邮箱已注册，请直接登录');
+
+      }
+
+    }
+
+
+
+    if (dto.username) {
+
+      const exists = await this.prisma.user.findUnique({ where: { username: dto.username } });
+
+      if (exists) {
+
+        throw new ConflictException('用户名已注册，请直接登录');
 
       }
 
@@ -200,11 +223,15 @@ export class AuthService {
 
       data: {
 
+        username: dto.username,
+
         phone: dto.phone,
 
         email: dto.email,
 
         wxOpenid,
+
+        masterPasswordHash: dto.password ? this.hashLoginPassword(dto.password) : undefined,
 
         encryptedVaultKey: dto.encryptedVaultKey,
 
@@ -287,12 +314,90 @@ export class AuthService {
 
 
 
+  async sendEmailCode(dto: SendEmailCodeDto, meta: { ip?: string } = {}) {
+    await this.ipBlacklistService.assertAllowed(meta.ip);
+
+    const key = this.emailOtpKey(dto.email);
+    const existing = this.codeStore.get(key);
+
+    if (existing && existing.expiresAt - Date.now() > 4.5 * 60 * 1000) {
+
+      throw new BadRequestException('发送过于频繁，请稍后再试');
+
+    }
+
+    const code = this.generateOtpCode();
+    await this.sendLoginEmailOtp(dto.email, code);
+
+    this.codeStore.set(key, {
+
+      code,
+
+      expiresAt: Date.now() + 10 * 60 * 1000,
+
+    });
+
+    this.logger.log(`Login email OTP sent to ${this.maskEmail(dto.email)}`);
+    return { success: true };
+
+  }
+
+
+
   async loginWithCode(dto: LoginWithCodeDto, meta: { ip?: string; device?: string; deviceId?: string }) {
 
     this.verifyOtp(dto.phone, dto.code);
 
     return this.loginByPhone(dto.phone, meta, 'auth.login.sms');
 
+  }
+
+
+
+  async loginWithEmailCode(
+    dto: LoginWithEmailCodeDto,
+    meta: { ip?: string; device?: string; deviceId?: string },
+  ) {
+    this.verifyOtp(this.emailOtpKey(dto.email), dto.code);
+
+    const user = await this.prisma.user.findUnique({ where: { email: dto.email } });
+    if (!user) {
+      return { registered: false, email: dto.email };
+    }
+
+    if (user.status === UserStatus.suspended) {
+      throw new ForbiddenException('账号已被停用');
+    }
+
+    return this.loginUserById(user.id, meta, 'auth.login.email');
+  }
+
+
+
+  async loginWithPassword(
+    dto: LoginWithPasswordDto,
+    meta: { ip?: string; device?: string; deviceId?: string },
+  ) {
+    await this.ipBlacklistService.assertAllowed(meta.ip);
+
+    const username = dto.username.trim();
+    this.assertLoginAllowed(username);
+
+    const user = await this.prisma.user.findUnique({ where: { username } });
+    if (!user) {
+      return { registered: false, username };
+    }
+
+    if (user.status === UserStatus.suspended) {
+      throw new ForbiddenException('账号已被停用');
+    }
+
+    if (!user.masterPasswordHash || !this.verifyLoginPassword(dto.password, user.masterPasswordHash)) {
+      this.recordFailedLogin(username, meta);
+      throw new UnauthorizedException('用户名或密码错误');
+    }
+
+    return this.loginUserById(user.id, meta, 'auth.login.password');
   }
 
 
@@ -468,9 +573,7 @@ export class AuthService {
 
     if (!user) {
 
-      this.recordFailedLogin(attemptKey, meta);
-
-      throw new NotFoundException('用户不存在，请先注册');
+      return { registered: false, phone };
 
     }
 
@@ -688,6 +791,85 @@ export class AuthService {
 
 
 
+  private emailOtpKey(email: string) {
+    return `email:${email.trim().toLowerCase()}`;
+  }
+
+
+
+  private maskEmail(email: string) {
+    const [name, domain] = email.split('@');
+    if (!domain) {
+      return email;
+    }
+    return `${name.slice(0, 2)}***@${domain}`;
+  }
+
+
+
+  private getMailTransporter() {
+    if (this.mailTransporter) {
+      return this.mailTransporter;
+    }
+
+    const host = this.config.get<string>('SMTP_HOST');
+    if (!host) {
+      return null;
+    }
+
+    const port = Number(this.config.get<string>('SMTP_PORT') ?? 587);
+    this.mailTransporter = nodemailer.createTransport({
+      host,
+      port,
+      secure: port === 465,
+      auth: {
+        user: this.config.get<string>('SMTP_USER'),
+        pass: this.config.get<string>('SMTP_PASS'),
+      },
+    });
+    return this.mailTransporter;
+  }
+
+
+
+  private async sendLoginEmailOtp(email: string, code: string) {
+    const transporter = this.getMailTransporter();
+    if (!transporter) {
+      this.logger.log(`[email:dev] login code ${code} sent to ${this.maskEmail(email)}`);
+      return;
+    }
+
+    await transporter.sendMail({
+      from: this.config.get<string>('SMTP_FROM') || this.config.get<string>('SMTP_USER'),
+      to: email,
+      subject: 'VaultPass 登录验证码',
+      text: `您的 VaultPass 登录验证码是 ${code}，10 分钟内有效。如非本人操作，请忽略。`,
+    });
+  }
+
+
+
+  private hashLoginPassword(password: string) {
+    const salt = randomBytes(16).toString('base64url');
+    const hash = scryptSync(password, salt, 64).toString('base64url');
+    return `scrypt$${salt}$${hash}`;
+  }
+
+
+
+  private verifyLoginPassword(password: string, stored: string) {
+    const [algorithm, salt, hash] = stored.split('$');
+    if (algorithm !== 'scrypt' || !salt || !hash) {
+      return false;
+    }
+
+    const expected = Buffer.from(hash, 'base64url');
+    const actual = scryptSync(password, salt, expected.length);
+    return expected.length === actual.length && timingSafeEqual(expected, actual);
+  }
+
+
+
   private assertLoginAllowed(key: string) {
 
     const state = this.loginAttempts.get(key);
@@ -756,6 +938,8 @@ export class AuthService {
 
         id: true,
 
+        username: true,
+
         phone: true,
 
         email: true,
@@ -795,6 +979,8 @@ export class AuthService {
       user: {
 
         id: user.id,
+
+        username: user.username ?? undefined,
 
         phone: user.phone ?? undefined,
 

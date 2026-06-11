@@ -181,6 +181,9 @@ let vaultKeyMemory: Uint8Array | null = null;
 let keyBundleMemory: EncryptedVaultKeyBundle | null = null;
 let recoveryBundleMemory: string | null = null;
 let pendingPhone = '';
+let pendingEmail = '';
+let pendingUsername = '';
+let pendingPassword = '';
 let pendingWxCode = '';
 
 export const vaultSession = {
@@ -260,6 +263,42 @@ export const vaultSession = {
     pendingPhone = '';
   },
 
+  setPendingEmail(email: string) {
+    pendingEmail = email;
+  },
+
+  getPendingEmail() {
+    return pendingEmail;
+  },
+
+  clearPendingEmail() {
+    pendingEmail = '';
+  },
+
+  setPendingUsername(username: string) {
+    pendingUsername = username;
+  },
+
+  getPendingUsername() {
+    return pendingUsername;
+  },
+
+  clearPendingUsername() {
+    pendingUsername = '';
+  },
+
+  setPendingPassword(password: string) {
+    pendingPassword = password;
+  },
+
+  getPendingPassword() {
+    return pendingPassword;
+  },
+
+  clearPendingPassword() {
+    pendingPassword = '';
+  },
+
   setPendingWxCode(code: string) {
     pendingWxCode = code;
   },
@@ -272,13 +311,20 @@ export const vaultSession = {
     pendingWxCode = '';
   },
 
+  clearPendingRegisterIdentity() {
+    pendingPhone = '';
+    pendingEmail = '';
+    pendingUsername = '';
+    pendingPassword = '';
+    pendingWxCode = '';
+  },
+
   logout() {
     vaultSession.clearVaultKey();
     keyBundleMemory = null;
     recoveryBundleMemory = null;
     clearToken();
-    pendingPhone = '';
-    pendingWxCode = '';
+    vaultSession.clearPendingRegisterIdentity();
   },
 };
 

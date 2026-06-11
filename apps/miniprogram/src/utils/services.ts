@@ -22,7 +22,7 @@ export interface AuthResult {
 
 export type AuthLoginResponse =
   | AuthResult
-  | { registered: false; phone?: string }
+  | { registered: false; phone?: string; email?: string; username?: string }
   | { mfaRequired: true; pendingId: string };
 
 export function isAuthResult(value: AuthLoginResponse): value is AuthResult {
@@ -45,7 +45,10 @@ export function loginMfa(pendingId: string, code: string) {
 }
 
 export interface RegisterPayload {
-  phone: string;
+  phone?: string;
+  email?: string;
+  username?: string;
+  password?: string;
   encryptedVaultKey: string;
   kdfSalt: string;
   kdfParams: AuthResult['vaultKeyBundle']['kdfParams'];
@@ -71,10 +74,37 @@ export function sendLoginCode(phone: string) {
 }
 
 export function loginWithCode(phone: string, code: string) {
-  return request<AuthResult>({
+  return request<AuthLoginResponse>({
     url: '/auth/login-with-code',
     method: 'POST',
     data: { phone, code },
+    auth: false,
+  });
+}
+
+export function sendEmailLoginCode(email: string) {
+  return request<{ success: boolean }>({
+    url: '/auth/send-email-code',
+    method: 'POST',
+    data: { email },
+    auth: false,
+  });
+}
+
+export function loginWithEmailCode(email: string, code: string) {
+  return request<AuthLoginResponse>({
+    url: '/auth/login-with-email-code',
+    method: 'POST',
+    data: { email, code },
+    auth: false,
+  });
+}
+
+export function loginWithPassword(username: string, password: string) {
+  return request<AuthLoginResponse>({
+    url: '/auth/login-with-password',
+    method: 'POST',
+    data: { username, password },
     auth: false,
   });
 }

@@ -17,7 +17,10 @@ import { DEFAULT_KDF_PARAMS } from '@vaultpass/crypto';
 import type { FileMetadata } from '@vaultpass/types';
 import { vaultSession } from './api';
 
-export async function registerWithMasterPassword(phone: string, masterPassword: string) {
+export async function registerWithMasterPassword(
+  identity: { phone?: string; email?: string; username?: string; password?: string },
+  masterPassword: string,
+) {
   const derived = deriveMasterKeyByPassword(masterPassword, await randomBytesAsync(16));
   const vaultKey = await randomBytesAsync(AES_KEY_LENGTH);
   const encryptedVaultKey = await encryptVaultKey(vaultKey, derived.masterKey);
@@ -26,7 +29,7 @@ export async function registerWithMasterPassword(phone: string, masterPassword: 
     derived,
     vaultKey,
     registerPayload: {
-      phone,
+      ...identity,
       encryptedVaultKey,
       kdfSalt: derived.kdfSalt,
       kdfParams: derived.kdfParams,

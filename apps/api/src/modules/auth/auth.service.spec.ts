@@ -21,6 +21,10 @@ describe('AuthService', () => {
     log: jest.fn(),
   };
 
+  const configService = {
+    get: jest.fn(),
+  };
+
   const inheritanceWorkflowService = {
     onUserActivity: jest.fn(),
   };
@@ -55,6 +59,7 @@ describe('AuthService', () => {
     service = new AuthService(
       prisma as never,
       jwtService as never,
+      configService as never,
       auditLogService as never,
       inheritanceWorkflowService as never,
       deviceService as never,

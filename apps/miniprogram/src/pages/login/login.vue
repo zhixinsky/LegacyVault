@@ -3,23 +3,37 @@ import { ref } from 'vue';
 import { vaultSession } from '@/utils/api';
 import {
   isAuthResult,
+  loginWithEmailCode,
   loginWithCode,
+  loginWithPassword,
   persistAuthResult,
+  sendEmailLoginCode,
   sendLoginCode,
   wxLogin,
+  type AuthLoginResponse,
 } from '@/utils/services';
 
+type LoginMethod = 'phone' | 'password' | 'email';
+
+const activeMethod = ref<LoginMethod>('phone');
 const phone = ref('');
 const code = ref('');
+const email = ref('');
+const emailCode = ref('');
+const username = ref('');
+const password = ref('');
 const loading = ref(false);
 const sendingCode = ref(false);
+const sendingEmailCode = ref(false);
 const countdown = ref(0);
+const emailCountdown = ref(0);
 const agreed = ref(false);
 const phoneFocused = ref(false);
 const heroBackgroundUrl =
   'cloud://prod-d4g8kpg7x92d55205.7072-prod-d4g8kpg7x92d55205-1441616383/img/bg.webp';
 
 let countdownTimer: ReturnType<typeof setInterval> | null = null;
+let emailCountdownTimer: ReturnType<typeof setInterval> | null = null;
 
 function ensureAgreed() {
   if (!agreed.value) {
@@ -41,14 +55,47 @@ function startCountdown() {
   }, 1000);
 }
 
-function goRegister() {
-  if (!ensureAgreed()) return;
-  if (!/^1\d{10}$/.test(phone.value)) {
-    uni.showToast({ title: '请输入正确手机号', icon: 'none' });
+function startEmailCountdown() {
+  emailCountdown.value = 60;
+  if (emailCountdownTimer) clearInterval(emailCountdownTimer);
+  emailCountdownTimer = setInterval(() => {
+    emailCountdown.value -= 1;
+    if (emailCountdown.value <= 0 && emailCountdownTimer) {
+      clearInterval(emailCountdownTimer);
+      emailCountdownTimer = null;
+    }
+  }, 1000);
+}
+
+function goRegisterFromLogin(result?: Extract<AuthLoginResponse, { registered: false }>) {
+  if (result?.phone) vaultSession.setPendingPhone(result.phone);
+  if (result?.email) vaultSession.setPendingEmail(result.email);
+  if (result?.username) {
+    vaultSession.setPendingUsername(result.username);
+    vaultSession.setPendingPassword(password.value);
+  }
+
+  uni.showToast({ title: '首次使用请设置主密码', icon: 'none', duration: 1600 });
+  setTimeout(() => {
+    uni.navigateTo({ url: '/pages/setup-password/setup-password?mode=register' });
+  }, 260);
+}
+
+function handleLoginResult(result: AuthLoginResponse) {
+  if (!isAuthResult(result)) {
+    if ('mfaRequired' in result) {
+      uni.showToast({ title: '暂不支持小程序 MFA 登录', icon: 'none' });
+      return;
+    }
+    goRegisterFromLogin(result);
     return;
   }
-  vaultSession.setPendingPhone(phone.value);
-  uni.navigateTo({ url: '/pages/setup-password/setup-password?mode=register' });
+
+  persistAuthResult(result);
+  if (result.user.phone) {
+    vaultSession.setPendingPhone(result.user.phone);
+  }
+  uni.navigateTo({ url: '/pages/setup-password/setup-password?mode=unlock' });
 }
 
 async function handleSendCode() {
@@ -73,7 +120,29 @@ async function handleSendCode() {
   }
 }
 
-async function goLogin() {
+async function handleSendEmailCode() {
+  if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.value)) {
+    uni.showToast({ title: '请输入正确邮箱', icon: 'none' });
+    return;
+  }
+  if (emailCountdown.value > 0) return;
+
+  sendingEmailCode.value = true;
+  try {
+    await sendEmailLoginCode(email.value);
+    startEmailCountdown();
+    uni.showToast({ title: '邮箱验证码已发送', icon: 'none' });
+  } catch (error) {
+    uni.showToast({
+      title: error instanceof Error ? error.message : '发送失败',
+      icon: 'none',
+    });
+  } finally {
+    sendingEmailCode.value = false;
+  }
+}
+
+async function handlePhoneLogin() {
   if (!ensureAgreed()) return;
   if (!/^1\d{10}$/.test(phone.value)) {
     uni.showToast({ title: '请输入正确手机号', icon: 'none' });
@@ -87,13 +156,7 @@ async function goLogin() {
   loading.value = true;
   try {
     const result = await loginWithCode(phone.value, code.value);
-    if (!isAuthResult(result)) {
-      uni.showToast({ title: '用户不存在，请先注册', icon: 'none' });
-      return;
-    }
-    persistAuthResult(result);
-    vaultSession.setPendingPhone(phone.value);
-    uni.navigateTo({ url: '/pages/setup-password/setup-password?mode=unlock' });
+    handleLoginResult(result);
   } catch (error) {
     uni.showToast({
       title: error instanceof Error ? error.message : '登录失败',
@@ -101,6 +164,66 @@ async function goLogin() {
     });
   } finally {
     loading.value = false;
+  }
+}
+
+async function handlePasswordLogin() {
+  if (!ensureAgreed()) return;
+  if (!/^[a-zA-Z0-9_]{3,32}$/.test(username.value)) {
+    uni.showToast({ title: '用户名仅支持 3-32 位字母、数字或下划线', icon: 'none' });
+    return;
+  }
+  if (!password.value || password.value.length < 6) {
+    uni.showToast({ title: '请输入至少 6 位登录密码', icon: 'none' });
+    return;
+  }
+
+  loading.value = true;
+  try {
+    const result = await loginWithPassword(username.value, password.value);
+    handleLoginResult(result);
+  } catch (error) {
+    uni.showToast({
+      title: error instanceof Error ? error.message : '登录失败',
+      icon: 'none',
+    });
+  } finally {
+    loading.value = false;
+  }
+}
+
+async function handleEmailLogin() {
+  if (!ensureAgreed()) return;
+  if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.value)) {
+    uni.showToast({ title: '请输入正确邮箱', icon: 'none' });
+    return;
+  }
+  if (!/^\d{6}$/.test(emailCode.value)) {
+    uni.showToast({ title: '请输入 6 位邮箱验证码', icon: 'none' });
+    return;
+  }
+
+  loading.value = true;
+  try {
+    const result = await loginWithEmailCode(email.value, emailCode.value);
+    handleLoginResult(result);
+  } catch (error) {
+    uni.showToast({
+      title: error instanceof Error ? error.message : '登录失败',
+      icon: 'none',
+    });
+  } finally {
+    loading.value = false;
+  }
+}
+
+function goLogin() {
+  if (activeMethod.value === 'phone') {
+    void handlePhoneLogin();
+  } else if (activeMethod.value === 'password') {
+    void handlePasswordLogin();
+  } else {
+    void handleEmailLogin();
   }
 }
 
@@ -123,20 +246,7 @@ async function handleWxLogin() {
     vaultSession.setPendingWxCode(loginRes.code);
     const result = await wxLogin(loginRes.code);
 
-    if (!isAuthResult(result)) {
-      uni.showToast({
-        title: '首次使用请授权手机号注册',
-        icon: 'none',
-        duration: 2500,
-      });
-      return;
-    }
-
-    persistAuthResult(result);
-    if (result.user.phone) {
-      vaultSession.setPendingPhone(result.user.phone);
-    }
-    uni.navigateTo({ url: '/pages/setup-password/setup-password?mode=unlock' });
+    handleLoginResult(result);
   } catch (error) {
     uni.showToast({
       title: error instanceof Error ? error.message : '微信登录失败',
@@ -148,6 +258,7 @@ async function handleWxLogin() {
 }
 
 function focusPhoneInput() {
+  activeMethod.value = 'phone';
   phoneFocused.value = true;
   uni.pageScrollTo({ scrollTop: 260, duration: 180 });
 }
@@ -174,7 +285,7 @@ function handleHeroImageError(error: unknown) {
     <view class="hero">
       <view class="brand-copy">
         <view class="welcome-line">
-          <image class="inline-icon mini-shield" src="/static/icons/login/shield.svg" mode="aspectFit" />
+          <image class="inline-icon mini-shield" src="/static/icons/login/shield-solid.svg" mode="aspectFit" />
           <text>Welcome to</text>
         </view>
         <text class="brand-title">LegacyVault</text>
@@ -202,46 +313,116 @@ function handleHeroImageError(error: unknown) {
 
       <view class="divider">
         <view class="divider-line" />
-        <text class="divider-text">或使用密码登录</text>
+        <text class="divider-text">选择登录方式</text>
         <view class="divider-line" />
       </view>
 
-      <text class="field-label">手机号</text>
-      <view class="input-wrap">
-        <image class="field-icon" src="/static/icons/login/phone.svg" mode="aspectFit" />
-        <input
-          v-model="phone"
-          class="field-input"
-          type="number"
-          maxlength="11"
-          placeholder="请输入手机号"
-          placeholder-class="placeholder"
-          :focus="phoneFocused"
-          @blur="phoneFocused = false"
-        />
+      <view class="method-tabs">
+        <button class="method-tab" :class="{ active: activeMethod === 'phone' }" @tap="activeMethod = 'phone'">手机号</button>
+        <button class="method-tab" :class="{ active: activeMethod === 'password' }" @tap="activeMethod = 'password'">用户名密码</button>
+        <button class="method-tab" :class="{ active: activeMethod === 'email' }" @tap="activeMethod = 'email'">邮箱验证码</button>
       </view>
 
-      <text class="field-label">验证码</text>
-      <view class="code-row">
-        <view class="input-wrap code-input">
-          <image class="field-icon" src="/static/icons/login/lock.svg" mode="aspectFit" />
+      <template v-if="activeMethod === 'phone'">
+        <text class="field-label">手机号</text>
+        <view class="input-wrap">
+          <image class="field-icon" src="/static/icons/login/phone-muted.svg" mode="aspectFit" />
           <input
-            v-model="code"
+            v-model="phone"
             class="field-input"
             type="number"
-            maxlength="6"
-            placeholder="请输入6位验证码"
+            maxlength="11"
+            placeholder="请输入手机号"
+            placeholder-class="placeholder"
+            :focus="phoneFocused"
+            @blur="phoneFocused = false"
+          />
+        </view>
+
+        <text class="field-label">验证码</text>
+        <view class="code-row">
+          <view class="input-wrap code-input">
+            <image class="field-icon" src="/static/icons/login/lock.svg" mode="aspectFit" />
+            <input
+              v-model="code"
+              class="field-input"
+              type="number"
+              maxlength="6"
+              placeholder="请输入6位验证码"
+              placeholder-class="placeholder"
+            />
+          </view>
+          <button
+            class="code-btn"
+            :disabled="sendingCode || countdown > 0"
+            @tap="handleSendCode"
+          >
+            {{ countdown > 0 ? `${countdown}s` : '获取验证码' }}
+          </button>
+        </view>
+      </template>
+
+      <template v-else-if="activeMethod === 'password'">
+        <text class="field-label">用户名</text>
+        <view class="input-wrap">
+          <image class="field-icon" src="/static/icons/login/register.svg" mode="aspectFit" />
+          <input
+            v-model="username"
+            class="field-input"
+            maxlength="32"
+            placeholder="请输入用户名"
             placeholder-class="placeholder"
           />
         </view>
-        <button
-          class="code-btn"
-          :disabled="sendingCode || countdown > 0"
-          @tap="handleSendCode"
-        >
-          {{ countdown > 0 ? `${countdown}s` : '获取验证码' }}
-        </button>
-      </view>
+
+        <text class="field-label">登录密码</text>
+        <view class="input-wrap">
+          <image class="field-icon" src="/static/icons/login/lock.svg" mode="aspectFit" />
+          <input
+            v-model="password"
+            class="field-input"
+            password
+            placeholder="请输入登录密码"
+            placeholder-class="placeholder"
+          />
+        </view>
+      </template>
+
+      <template v-else>
+        <text class="field-label">邮箱</text>
+        <view class="input-wrap">
+          <image class="field-icon" src="/static/icons/login/register.svg" mode="aspectFit" />
+          <input
+            v-model="email"
+            class="field-input"
+            type="text"
+            placeholder="请输入邮箱"
+            placeholder-class="placeholder"
+          />
+        </view>
+
+        <text class="field-label">邮箱验证码</text>
+        <view class="code-row">
+          <view class="input-wrap code-input">
+            <image class="field-icon" src="/static/icons/login/lock.svg" mode="aspectFit" />
+            <input
+              v-model="emailCode"
+              class="field-input"
+              type="number"
+              maxlength="6"
+              placeholder="请输入6位验证码"
+              placeholder-class="placeholder"
+            />
+          </view>
+          <button
+            class="code-btn"
+            :disabled="sendingEmailCode || emailCountdown > 0"
+            @tap="handleSendEmailCode"
+          >
+            {{ emailCountdown > 0 ? `${emailCountdown}s` : '获取验证码' }}
+          </button>
+        </view>
+      </template>
 
       <view class="agreement" @tap="toggleAgreement">
         <view class="check" :class="{ checked: agreed }" />
@@ -258,27 +439,28 @@ function handleHeroImageError(error: unknown) {
         @tap="goLogin"
       >
         <image class="button-icon login-icon" src="/static/icons/login/login.svg" mode="aspectFit" />
-        <text>登录</text>
-      </button>
-
-      <button class="register-btn" @tap="goRegister">
-        <image class="button-icon" src="/static/icons/login/register.svg" mode="aspectFit" />
-        <text>注册新账户</text>
+        <text>{{ activeMethod === 'password' ? '用户名登录 / 自动注册' : '登录 / 自动注册' }}</text>
       </button>
 
       <view class="security-points">
         <view class="point">
-          <image class="point-icon" src="/static/icons/login/data-encryption.svg" mode="aspectFit" />
+          <view class="point-icon-wrap data">
+            <image class="point-icon" src="/static/icons/login/data-encryption.svg" mode="aspectFit" />
+          </view>
           <text class="point-title">数据加密存储</text>
           <text class="point-desc">银行级安全保障</text>
         </view>
         <view class="point">
-          <image class="point-icon" src="/static/icons/login/private-control.svg" mode="aspectFit" />
+          <view class="point-icon-wrap private">
+            <image class="point-icon" src="/static/icons/login/private-control.svg" mode="aspectFit" />
+          </view>
           <text class="point-title">完全私密控制</text>
           <text class="point-desc">只有您可以访问</text>
         </view>
         <view class="point">
-          <image class="point-icon" src="/static/icons/login/backup.svg" mode="aspectFit" />
+          <view class="point-icon-wrap backup">
+            <image class="point-icon" src="/static/icons/login/backup.svg" mode="aspectFit" />
+          </view>
           <text class="point-title">多重备份保护</text>
           <text class="point-desc">永不丢失您的数据</text>
         </view>
@@ -383,8 +565,8 @@ function handleHeroImageError(error: unknown) {
   position: relative;
   z-index: 1;
   width: 100%;
-  padding: 48rpx 36rpx 34rpx;
-  border-radius: 48rpx;
+  padding: 46rpx 34rpx 34rpx;
+  border-radius: 42rpx;
   background: #fff;
   box-shadow: 0 18rpx 56rpx rgba(11, 31, 77, 0.1);
   box-sizing: border-box;
@@ -440,7 +622,7 @@ button::after {
   display: flex;
   align-items: center;
   gap: 18rpx;
-  margin: 36rpx 0 28rpx;
+  margin: 38rpx 0 30rpx;
 }
 
 .divider-line {
@@ -454,10 +636,36 @@ button::after {
   color: #9aa5b5;
 }
 
+.method-tabs {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 12rpx;
+  padding: 8rpx;
+  border-radius: 22rpx;
+  background: #f3f7ff;
+}
+
+.method-tab {
+  height: 64rpx;
+  padding: 0;
+  border-radius: 18rpx;
+  background: transparent;
+  color: #6b7280;
+  font-size: 22rpx;
+  line-height: 64rpx;
+}
+
+.method-tab.active {
+  background: #fff;
+  color: #1677ff;
+  font-weight: 700;
+  box-shadow: 0 8rpx 18rpx rgba(22, 119, 255, 0.1);
+}
+
 .field-label {
   display: block;
-  margin: 24rpx 0 14rpx;
-  font-size: 26rpx;
+  margin: 28rpx 0 14rpx;
+  font-size: 25rpx;
   font-weight: 700;
   color: #0b1f4d;
 }
@@ -465,18 +673,18 @@ button::after {
 .input-wrap {
   display: flex;
   align-items: center;
-  height: 104rpx;
-  padding: 0 24rpx;
+  height: 88rpx;
+  padding: 0 22rpx;
   border: 1rpx solid #e1e8f0;
-  border-radius: 28rpx;
+  border-radius: 22rpx;
   background: #fff;
   box-sizing: border-box;
 }
 
 .field-icon {
-  width: 32rpx;
-  height: 32rpx;
-  margin-right: 18rpx;
+  width: 28rpx;
+  height: 28rpx;
+  margin-right: 16rpx;
   flex-shrink: 0;
   opacity: 0.72;
 }
@@ -484,7 +692,7 @@ button::after {
 .field-input {
   flex: 1;
   height: 100%;
-  font-size: 28rpx;
+  font-size: 27rpx;
   color: #0b1f4d;
 }
 
@@ -494,7 +702,7 @@ button::after {
 
 .code-row {
   display: flex;
-  gap: 16rpx;
+  gap: 18rpx;
   align-items: center;
 }
 
@@ -503,15 +711,15 @@ button::after {
 }
 
 .code-btn {
-  height: 104rpx;
-  min-width: 200rpx;
-  padding: 0 20rpx;
-  border-radius: 28rpx;
+  height: 88rpx;
+  min-width: 176rpx;
+  padding: 0 18rpx;
+  border-radius: 22rpx;
   background: #eef3ff;
   color: #1e4dff;
   font-size: 24rpx;
   font-weight: 700;
-  line-height: 104rpx;
+  line-height: 88rpx;
 }
 
 .agreement {
@@ -519,7 +727,7 @@ button::after {
   align-items: center;
   flex-wrap: wrap;
   gap: 6rpx;
-  margin-top: 28rpx;
+  margin-top: 30rpx;
 }
 
 .check {
@@ -565,41 +773,40 @@ button::after {
   align-items: center;
   justify-content: center;
   gap: 12rpx;
-  height: 108rpx;
-  border-radius: 28rpx;
-  font-size: 30rpx;
+  height: 92rpx;
+  border-radius: 24rpx;
+  font-size: 28rpx;
   font-weight: 800;
 }
 
 .login-btn {
-  margin-top: 28rpx;
+  margin-top: 30rpx;
   color: #fff;
   background: linear-gradient(135deg, #1e4dff, #0066ff);
-  box-shadow: 0 16rpx 34rpx rgba(30, 77, 255, 0.26);
+  box-shadow: 0 12rpx 26rpx rgba(30, 77, 255, 0.24);
 }
 
 .login-btn.disabled {
-  background: #cbd5e1;
-  box-shadow: none;
+  background: linear-gradient(135deg, #1e4dff, #0066ff);
+  box-shadow: 0 12rpx 26rpx rgba(30, 77, 255, 0.24);
 }
 
 .button-icon {
   display: block;
-  width: 36rpx;
-  height: 36rpx;
+  width: 32rpx;
+  height: 32rpx;
   flex-shrink: 0;
 }
 
 .login-icon {
-  padding: 4rpx;
-  border-radius: 50%;
-  background: rgba(255, 255, 255, 0.96);
-  box-sizing: border-box;
+  width: 30rpx;
+  height: 30rpx;
 }
 
 .register-btn {
   margin-top: 22rpx;
   color: #1e4dff;
+  font-weight: 500;
   background: #fff;
   border: 1rpx solid #b8c8ff;
 }
@@ -609,7 +816,7 @@ button::after {
   grid-template-columns: repeat(3, 1fr);
   gap: 0;
   margin-top: 46rpx;
-  padding-top: 30rpx;
+  padding-top: 32rpx;
   border-top: 1rpx solid #eef2f7;
 }
 
@@ -624,11 +831,32 @@ button::after {
   border-right: none;
 }
 
+.point-icon-wrap {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 76rpx;
+  height: 76rpx;
+  margin: 0 auto 18rpx;
+  border-radius: 50%;
+}
+
+.point-icon-wrap.data {
+  background: #eaf3ff;
+}
+
+.point-icon-wrap.private {
+  background: #e9fbf1;
+}
+
+.point-icon-wrap.backup {
+  background: #f4ecff;
+}
+
 .point-icon {
   display: block;
-  width: 58rpx;
-  height: 58rpx;
-  margin: 0 auto 18rpx;
+  width: 42rpx;
+  height: 42rpx;
 }
 
 .point-title {

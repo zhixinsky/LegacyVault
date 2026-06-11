@@ -16,6 +16,7 @@ import { WxBindScanService } from './wx-bind-scan.service';
 
 @Module({
   imports: [
+    ConfigModule,
     InheritanceModule,
     MfaModule,
     NotificationModule,
