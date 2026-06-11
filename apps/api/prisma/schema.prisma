@@ -76,12 +76,15 @@ model User {
   status             UserStatus @default(pending)
   lastLoginAt        DateTime?  @map("last_login_at")
   masterPasswordHash String?    @map("master_password_hash") @db.VarChar(255)
-  encryptedVaultKey  String     @map("encrypted_vault_key") @db.LongText
-  kdfSalt            String     @map("kdf_salt") @db.VarChar(128)
-  kdfParams          Json       @map("kdf_params")
+  hasVault           Boolean    @default(false) @map("has_vault")
+  encryptedVaultKey  String?    @map("encrypted_vault_key") @db.LongText
+  encryptedVaultKeyByRecovery String? @map("encrypted_vault_key_by_recovery") @db.LongText
+  passwordSalt       String?    @map("password_salt") @db.VarChar(128)
+  recoverySalt       String?    @map("recovery_salt") @db.VarChar(128)
+  kdfParams          Json?      @map("kdf_params")
+  vaultCreatedAt     DateTime?  @map("vault_created_at")
   mfaEnabled         Boolean    @default(false) @map("mfa_enabled")
   mfaSecret          String?    @map("mfa_secret") @db.VarChar(128)
-  encryptedVaultKeyByRecovery String? @map("encrypted_vault_key_by_recovery") @db.LongText
   recoveryKeyHint    String?    @map("recovery_key_hint") @db.VarChar(255)
   createdAt          DateTime   @default(now()) @map("created_at")
   updatedAt          DateTime   @updatedAt @map("updated_at")

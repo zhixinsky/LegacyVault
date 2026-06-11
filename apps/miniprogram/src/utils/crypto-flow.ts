@@ -3,15 +3,22 @@ import {
   AES_KEY_LENGTH,
   base64ToBytes,
   bytesToBase64,
+  calculatePasswordStrength,
   decryptJson,
   decryptVaultKey,
+  deriveMasterKey,
+  deriveRecoveryKey as deriveRecoveryKeyByPhrase,
   deriveMasterKeyByPassword,
   encryptFile,
   encryptJson,
   encryptVaultKey,
+  encryptVaultKeyByRecovery,
+  generateRecoveryKey,
+  generateVaultKey,
   hashChallengeAnswer,
   normalizeChallengeAnswer,
   randomBytesAsync,
+  zeroize,
 } from '@vaultpass/crypto';
 import { DEFAULT_KDF_PARAMS } from '@vaultpass/crypto';
 import type { FileMetadata } from '@vaultpass/types';
@@ -35,6 +42,42 @@ export async function registerWithMasterPassword(
       kdfParams: derived.kdfParams,
     },
   };
+}
+
+export async function buildCreateVaultPayload(masterPassword: string) {
+  const vaultKey = generateVaultKey();
+  const recoveryKey = generateRecoveryKey();
+  const master = deriveMasterKey(masterPassword);
+  const recovery = deriveRecoveryKeyByPhrase(recoveryKey);
+
+  try {
+    const encryptedVaultKey = await encryptVaultKey(vaultKey, master.masterKey);
+    const encryptedVaultKeyByRecovery = await encryptVaultKeyByRecovery(
+      vaultKey,
+      recovery.masterKey,
+    );
+
+    return {
+      vaultKey,
+      recoveryKey,
+      keyBundle: {
+        encryptedVaultKey,
+        kdfSalt: master.kdfSalt,
+        kdfParams: master.kdfParams,
+      },
+      recoveryBundle: encryptedVaultKeyByRecovery,
+      createPayload: {
+        encryptedVaultKey,
+        encryptedVaultKeyByRecovery,
+        passwordSalt: master.kdfSalt,
+        recoverySalt: recovery.kdfSalt,
+        kdfParams: master.kdfParams,
+      },
+    };
+  } finally {
+    zeroize(master.masterKey);
+    zeroize(recovery.masterKey);
+  }
 }
 
 export async function unlockVaultWithMasterPassword(masterPassword: string) {
@@ -149,11 +192,13 @@ export async function decryptDownloadedBuffer(
 }
 
 export function writeDecryptedPreviewFile(data: Uint8Array, ext: string) {
-  const filePath = `${uni.env.USER_DATA_PATH}/vp-preview-${Date.now()}.${ext}`;
+  const userDataPath = (uni as unknown as { env?: { USER_DATA_PATH?: string } }).env?.USER_DATA_PATH ?? '';
+  const filePath = `${userDataPath}/vp-preview-${Date.now()}.${ext}`;
   return new Promise<string>((resolve, reject) => {
+    const bytes = data.slice();
     uni.getFileSystemManager().writeFile({
       filePath,
-      data: data.buffer.slice(data.byteOffset, data.byteOffset + data.byteLength),
+      data: bytes.buffer,
       success: () => resolve(filePath),
       fail: (error) => reject(new Error(error.errMsg || '写入预览文件失败')),
     });
@@ -185,6 +230,7 @@ function writeUtf8File(filePath: string, content: string): Promise<void> {
 }
 
 export { DEFAULT_KDF_PARAMS };
+export { calculatePasswordStrength };
 
 export function computeLookupHash(value: string) {
   const normalized = value.trim().toLowerCase();

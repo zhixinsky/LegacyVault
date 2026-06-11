@@ -5,3 +5,9 @@ declare module '*.vue' {
   const component: DefineComponent<object, object, unknown>;
   export default component;
 }
+
+declare const wx: {
+  env?: {
+    USER_DATA_PATH?: string;
+  };
+};

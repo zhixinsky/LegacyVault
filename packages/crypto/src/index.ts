@@ -30,6 +30,14 @@ export {
 export { deriveMasterKeyByPassword } from './kdf/derive-master-key.js';
 export { generateVaultKey, generateFileKey } from './vault-key.js';
 export { encryptVaultKey, decryptVaultKey } from './vault-crypto.js';
+export {
+  calculatePasswordStrength,
+  deriveMasterKey,
+  deriveRecoveryKey,
+  encryptVaultKeyByRecovery,
+  generateRecoveryKey,
+} from './vault-setup.js';
+export type { PasswordStrengthLevel, PasswordStrengthResult } from './vault-setup.js';
 export { encryptJson, decryptJson } from './json-crypto.js';
 export { encryptFile, decryptFile } from './file-crypto.js';
 export {

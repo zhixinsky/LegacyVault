@@ -235,9 +235,13 @@ export class AuthService {
 
         encryptedVaultKey: dto.encryptedVaultKey,
 
-        kdfSalt: dto.kdfSalt,
+        hasVault: Boolean(dto.encryptedVaultKey && dto.kdfSalt && dto.kdfParams),
 
-        kdfParams: dto.kdfParams as unknown as Prisma.InputJsonValue,
+        passwordSalt: dto.kdfSalt,
+
+        kdfParams: dto.kdfParams ? (dto.kdfParams as unknown as Prisma.InputJsonValue) : undefined,
+
+        vaultCreatedAt: dto.encryptedVaultKey ? new Date() : undefined,
 
         status: UserStatus.active,
 
@@ -1025,7 +1029,9 @@ export class AuthService {
 
         recoveryKeyHint: true,
 
-        kdfSalt: true,
+        hasVault: true,
+
+        passwordSalt: true,
 
         kdfParams: true,
 
@@ -1057,6 +1063,8 @@ export class AuthService {
 
         mfaEnabled: user.mfaEnabled,
 
+        hasVault: user.hasVault,
+
         recoveryKeyConfigured: Boolean(user.encryptedVaultKeyByRecovery),
 
         recoveryKeyHint: user.recoveryKeyHint ?? undefined,
@@ -1067,15 +1075,15 @@ export class AuthService {
 
       },
 
-      vaultKeyBundle: {
+      vaultKeyBundle: user.hasVault && user.encryptedVaultKey && user.passwordSalt && user.kdfParams ? {
 
         encryptedVaultKey: user.encryptedVaultKey,
 
-        kdfSalt: user.kdfSalt,
+        kdfSalt: user.passwordSalt,
 
         kdfParams: user.kdfParams,
 
-      },
+      } : undefined,
 
       encryptedVaultKeyByRecovery: user.encryptedVaultKeyByRecovery ?? undefined,
 

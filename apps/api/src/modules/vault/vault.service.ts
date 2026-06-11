@@ -1,11 +1,12 @@
-import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
-import { AuditRiskLevel } from '@prisma/client';
+import { BadRequestException, ConflictException, Injectable, NotFoundException } from '@nestjs/common';
+import { AuditRiskLevel, Prisma } from '@prisma/client';
 import { PrismaService } from '../../prisma/prisma.service';
 import { getPagination } from '../../common/dto/pagination.dto';
 import { AuditLogService } from '../audit-log/audit-log.service';
 import { MfaService } from '../user/mfa.service';
 import {
   CreateVaultItemDto,
+  CreateVaultDto,
   ListVaultItemsQueryDto,
   UpdateVaultItemDto,
 } from './dto/vault.dto';
@@ -17,6 +18,48 @@ export class VaultService {
     private readonly auditLogService: AuditLogService,
     private readonly mfaService: MfaService,
   ) {}
+
+  async createVault(
+    userId: string,
+    dto: CreateVaultDto,
+    meta: { ip?: string; device?: string },
+  ) {
+    const user = await this.prisma.user.findUnique({
+      where: { id: userId },
+      select: { hasVault: true },
+    });
+
+    if (!user) {
+      throw new NotFoundException('用户不存在');
+    }
+    if (user.hasVault) {
+      throw new ConflictException('保险箱已创建');
+    }
+
+    await this.prisma.user.update({
+      where: { id: userId },
+      data: {
+        hasVault: true,
+        encryptedVaultKey: dto.encryptedVaultKey,
+        encryptedVaultKeyByRecovery: dto.encryptedVaultKeyByRecovery,
+        passwordSalt: dto.passwordSalt,
+        recoverySalt: dto.recoverySalt,
+        kdfParams: dto.kdfParams as unknown as Prisma.InputJsonValue,
+        vaultCreatedAt: new Date(),
+      },
+    });
+
+    await this.auditLogService.log({
+      userId,
+      actorId: userId,
+      action: 'vault.create',
+      ip: meta.ip,
+      device: meta.device,
+      riskLevel: AuditRiskLevel.high,
+    });
+
+    return { created: true, hasVault: true };
+  }
 
   async list(userId: string, query: ListVaultItemsQueryDto) {
     const { page, pageSize, skip, take } = getPagination(query.page, query.pageSize);

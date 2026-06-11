@@ -29,6 +29,30 @@
       "style": { "navigationBarTitleText": "设置主密码" }
     },
     {
+      "path": "pages/create-vault-password/create-vault-password",
+      "style": {
+        "navigationStyle": "custom",
+        "navigationBarBackgroundColor": "#F7FBFF",
+        "navigationBarTextStyle": "black"
+      }
+    },
+    {
+      "path": "pages/recovery-key-display/recovery-key-display",
+      "style": {
+        "navigationStyle": "custom",
+        "navigationBarBackgroundColor": "#F7FBFF",
+        "navigationBarTextStyle": "black"
+      }
+    },
+    {
+      "path": "pages/recovery-key-confirm/recovery-key-confirm",
+      "style": {
+        "navigationStyle": "custom",
+        "navigationBarBackgroundColor": "#F7FBFF",
+        "navigationBarTextStyle": "black"
+      }
+    },
+    {
       "path": "pages/vault/vault",
       "style": { "navigationBarTitleText": "保险箱" }
     },

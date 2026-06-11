@@ -127,19 +127,22 @@ export class RegisterDto {
   @IsString()
   password?: string;
 
-  /** 客户端加密后的 vault_key，服务器无法解密 */
+  /** 客户端加密后的 vault_key，服务器无法解密。旧注册流程兼容字段。 */
+  @IsOptional()
   @IsString()
   @IsNotEmpty()
-  encryptedVaultKey!: string;
+  encryptedVaultKey?: string;
 
+  @IsOptional()
   @IsString()
   @IsNotEmpty()
-  kdfSalt!: string;
+  kdfSalt?: string;
 
+  @IsOptional()
   @IsObject()
   @ValidateNested()
   @Type(() => KdfParamsDto)
-  kdfParams!: KdfParamsDto;
+  kdfParams?: KdfParamsDto;
 }
 
 export class LoginDto {

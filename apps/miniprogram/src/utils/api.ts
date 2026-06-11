@@ -147,7 +147,7 @@ export async function request<T>(options: RequestOptions): Promise<T> {
   return new Promise((resolve, reject) => {
     uni.request({
       url: `${API_BASE_URL}${options.url}`,
-      method: options.method ?? 'GET',
+      method: (options.method ?? 'GET') as UniApp.RequestOptions['method'],
       data: options.data as UniApp.RequestOptions['data'],
       header: buildHeaders(token, options),
       success: (res) => {
@@ -180,6 +180,12 @@ export function clearToken() {
 let vaultKeyMemory: Uint8Array | null = null;
 let keyBundleMemory: EncryptedVaultKeyBundle | null = null;
 let recoveryBundleMemory: string | null = null;
+let pendingVaultSetup:
+  | {
+      recoveryKey: string;
+      recoveryLastGroup: string;
+    }
+  | null = null;
 let pendingPhone = '';
 let pendingEmail = '';
 let pendingUsername = '';
@@ -319,10 +325,23 @@ export const vaultSession = {
     pendingWxCode = '';
   },
 
+  setPendingVaultSetup(setup: { recoveryKey: string; recoveryLastGroup: string }) {
+    pendingVaultSetup = setup;
+  },
+
+  getPendingVaultSetup() {
+    return pendingVaultSetup;
+  },
+
+  clearPendingVaultSetup() {
+    pendingVaultSetup = null;
+  },
+
   logout() {
     vaultSession.clearVaultKey();
     keyBundleMemory = null;
     recoveryBundleMemory = null;
+    pendingVaultSetup = null;
     clearToken();
     vaultSession.clearPendingRegisterIdentity();
   },

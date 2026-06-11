@@ -68,7 +68,7 @@ function startEmailCountdown() {
   }, 1000);
 }
 
-function goRegisterFromLogin(result?: Extract<AuthLoginResponse, { registered: false }>) {
+async function goRegisterFromLogin(result?: Extract<AuthLoginResponse, { registered: false }>) {
   if (result?.phone) vaultSession.setPendingPhone(result.phone);
   if (result?.email) vaultSession.setPendingEmail(result.email);
   if (result?.username) {
@@ -76,10 +76,29 @@ function goRegisterFromLogin(result?: Extract<AuthLoginResponse, { registered: f
     vaultSession.setPendingPassword(password.value);
   }
 
-  uni.showToast({ title: '首次使用请设置主密码', icon: 'none', duration: 1600 });
-  setTimeout(() => {
-    uni.navigateTo({ url: '/pages/setup-password/setup-password?mode=register' });
-  }, 260);
+  loading.value = true;
+  try {
+    const wxCode = vaultSession.getPendingWxCode();
+    const auth = await import('@/utils/services').then((m) =>
+      m.register({
+        phone: vaultSession.getPendingPhone() || undefined,
+        email: vaultSession.getPendingEmail() || undefined,
+        username: vaultSession.getPendingUsername() || undefined,
+        password: vaultSession.getPendingPassword() || undefined,
+        ...(wxCode ? { wxCode } : {}),
+      }),
+    );
+    persistAuthResult(auth);
+    vaultSession.clearPendingRegisterIdentity();
+    uni.navigateTo({ url: '/pages/create-vault-password/create-vault-password' });
+  } catch (error) {
+    uni.showToast({
+      title: error instanceof Error ? error.message : '注册失败',
+      icon: 'none',
+    });
+  } finally {
+    loading.value = false;
+  }
 }
 
 function handleLoginResult(result: AuthLoginResponse) {
@@ -88,13 +107,17 @@ function handleLoginResult(result: AuthLoginResponse) {
       uni.showToast({ title: '暂不支持小程序 MFA 登录', icon: 'none' });
       return;
     }
-    goRegisterFromLogin(result);
+    void goRegisterFromLogin(result);
     return;
   }
 
   persistAuthResult(result);
   if (result.user.phone) {
     vaultSession.setPendingPhone(result.user.phone);
+  }
+  if (!result.user.hasVault || !result.vaultKeyBundle) {
+    uni.navigateTo({ url: '/pages/create-vault-password/create-vault-password' });
+    return;
   }
   uni.navigateTo({ url: '/pages/setup-password/setup-password?mode=unlock' });
 }

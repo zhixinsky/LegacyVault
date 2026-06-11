@@ -179,13 +179,14 @@ async function handleDownload(file: VaultFileItem) {
 
     const fs = uni.getFileSystemManager();
 
-    const userPath = `${(wx as { env?: { USER_DATA_PATH?: string } }).env?.USER_DATA_PATH ?? ''}/vaultpass-${file.id}`;
+    const userPath = `${wx.env?.USER_DATA_PATH ?? ''}/vaultpass-${file.id}`;
+    const decryptedBytes = decrypted.slice();
 
     fs.writeFile({
 
       filePath: userPath,
 
-      data: decrypted.buffer,
+      data: decryptedBytes.buffer,
 
       success: () => {
 

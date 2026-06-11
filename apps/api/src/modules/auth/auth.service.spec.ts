@@ -120,10 +120,11 @@ describe('AuthService', () => {
       mfaEnabled: false,
       lastLoginAt: new Date(),
       createdAt: new Date(),
+      hasVault: true,
       encryptedVaultKey: 'enc-key',
       encryptedVaultKeyByRecovery: null,
       recoveryKeyHint: null,
-      kdfSalt: 'salt',
+      passwordSalt: 'salt',
       kdfParams: { algorithm: 'argon2id', memory: 65536, iterations: 3, parallelism: 4 },
     });
 
@@ -143,7 +144,7 @@ describe('AuthService', () => {
     );
 
     expect(result.accessToken).toBe('mock-token');
-    expect(result.vaultKeyBundle.encryptedVaultKey).toBe('enc-key');
+    expect(result.vaultKeyBundle?.encryptedVaultKey).toBe('enc-key');
     expect(auditLogService.log).toHaveBeenCalledWith(
       expect.objectContaining({
         action: 'auth.register',

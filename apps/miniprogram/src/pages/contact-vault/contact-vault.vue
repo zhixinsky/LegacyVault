@@ -71,10 +71,11 @@ async function handleDownload(file: {
     const encryptedContent = new TextDecoder().decode(new Uint8Array(buffer));
     const decrypted = await decryptStoredFile(encryptedContent, file.encryptedFileKey, vaultKey);
     const fs = uni.getFileSystemManager();
-    const filePath = `${(wx as { env?: { USER_DATA_PATH?: string } }).env?.USER_DATA_PATH ?? ''}/vaultpass-${file.id}`;
+    const filePath = `${wx.env?.USER_DATA_PATH ?? ''}/vaultpass-${file.id}`;
+    const decryptedBytes = decrypted.slice();
     fs.writeFile({
       filePath,
-      data: decrypted.buffer,
+      data: decryptedBytes.buffer,
       success: () => {
         uni.openDocument({ filePath, showMenu: true });
       },

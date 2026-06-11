@@ -4,11 +4,10 @@ import { ref } from 'vue';
 import { decryptVaultTitle } from '@/utils/crypto-flow';
 import {
   getProfile,
-  listTrashVaultItems,
-  permanentDeleteVaultItem,
-  restoreVaultItem,
-  type VaultItem,
-} from '@/utils/services';
+  listTrashVaultItems,
+  permanentDeleteVaultItem,
+  restoreVaultItem,
+} from '@/utils/services';
 
 const items = ref<Array<{ id: string; title: string; type: string }>>([]);
 const mfaEnabled = ref(false);

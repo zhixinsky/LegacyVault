@@ -90,7 +90,8 @@ export async function buildVaultExportData() {
 
 export function saveExportJsonToLocal(data: unknown) {
   const fs = uni.getFileSystemManager();
-  const filePath = `${uni.env.USER_DATA_PATH}/vaultpass-export-${Date.now()}.json`;
+  const userDataPath = (uni as unknown as { env?: { USER_DATA_PATH?: string } }).env?.USER_DATA_PATH ?? '';
+  const filePath = `${userDataPath}/vaultpass-export-${Date.now()}.json`;
   const content = JSON.stringify(data, null, 2);
 
   return new Promise<string>((resolve, reject) => {

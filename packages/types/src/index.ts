@@ -66,6 +66,7 @@ export interface UserProfile {
   email?: string;
   status: UserStatus;
   mfaEnabled: boolean;
+  hasVault?: boolean;
   lastLoginAt?: string;
   createdAt: string;
 }

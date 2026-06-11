@@ -4,11 +4,12 @@ import { request, saveToken, vaultSession } from './api';
 export interface AuthResult {
   accessToken: string;
   user: UserProfile & {
+    hasVault?: boolean;
     recoveryKeyConfigured?: boolean;
     recoveryKeyHint?: string;
   };
   encryptedVaultKeyByRecovery?: string;
-  vaultKeyBundle: {
+  vaultKeyBundle?: {
     encryptedVaultKey: string;
     kdfSalt: string;
     kdfParams: {
@@ -49,9 +50,9 @@ export interface RegisterPayload {
   email?: string;
   username?: string;
   password?: string;
-  encryptedVaultKey: string;
-  kdfSalt: string;
-  kdfParams: AuthResult['vaultKeyBundle']['kdfParams'];
+  encryptedVaultKey?: string;
+  kdfSalt?: string;
+  kdfParams?: NonNullable<AuthResult['vaultKeyBundle']>['kdfParams'];
   wxCode?: string;
 }
 
@@ -133,10 +134,26 @@ export function wechatPhoneLogin(code: string) {
 
 export function persistAuthResult(result: AuthResult) {
   saveToken(result.accessToken);
-  vaultSession.setKeyBundle(result.vaultKeyBundle);
+  if (result.vaultKeyBundle) {
+    vaultSession.setKeyBundle(result.vaultKeyBundle);
+  }
   if (result.encryptedVaultKeyByRecovery) {
     vaultSession.setRecoveryBundle(result.encryptedVaultKeyByRecovery);
   }
+}
+
+export function createVault(payload: {
+  encryptedVaultKey: string;
+  encryptedVaultKeyByRecovery: string;
+  passwordSalt: string;
+  recoverySalt: string;
+  kdfParams: NonNullable<AuthResult['vaultKeyBundle']>['kdfParams'];
+}) {
+  return request<{ created: boolean; hasVault: boolean }>({
+    url: '/vault/create',
+    method: 'POST',
+    data: payload,
+  });
 }
 
 export function heartbeat() {

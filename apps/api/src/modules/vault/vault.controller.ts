@@ -15,10 +15,25 @@ import { MfaCode } from '../../common/decorators/mfa-code.decorator';
 import { getRequestMeta } from '../../common/utils/request-meta';
 import {
   CreateVaultItemDto,
+  CreateVaultDto,
   ListVaultItemsQueryDto,
   UpdateVaultItemDto,
 } from './dto/vault.dto';
 import { VaultService } from './vault.service';
+
+@Controller('vault')
+export class VaultSetupController {
+  constructor(private readonly vaultService: VaultService) {}
+
+  @Post('create')
+  createVault(
+    @CurrentUser() user: AuthUser,
+    @Body() dto: CreateVaultDto,
+    @Req() req: Request,
+  ) {
+    return this.vaultService.createVault(user.userId, dto, getRequestMeta(req));
+  }
+}
 
 @Controller('vault/items')
 export class VaultController {
