@@ -116,6 +116,7 @@ export function clearToken() {
 let vaultKeyMemory: Uint8Array | null = null;
 let keyBundleMemory: EncryptedVaultKeyBundle | null = null;
 let recoveryBundleMemory: string | null = null;
+let recoverySaltMemory: string | null = null;
 let pendingVaultSetup:
   | {
       recoveryKey: string;
@@ -165,6 +166,14 @@ export const vaultSession = {
 
   getRecoveryBundle() {
     return recoveryBundleMemory;
+  },
+
+  setRecoverySalt(recoverySalt: string) {
+    recoverySaltMemory = recoverySalt;
+  },
+
+  getRecoverySalt() {
+    return recoverySaltMemory;
   },
 
   setPendingPhone(phone: string) {
@@ -238,6 +247,7 @@ export const vaultSession = {
     vaultSession.clearVaultKey();
     keyBundleMemory = null;
     recoveryBundleMemory = null;
+    recoverySaltMemory = null;
     pendingVaultSetup = null;
     clearToken();
     vaultSession.clearPendingRegisterIdentity();

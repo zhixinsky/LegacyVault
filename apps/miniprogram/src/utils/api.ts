@@ -11,6 +11,7 @@ import {
 
 const KEY_BUNDLE_STORAGE_KEY = 'vp_key_bundle';
 const RECOVERY_BUNDLE_STORAGE_KEY = 'vp_recovery_bundle';
+const RECOVERY_SALT_STORAGE_KEY = 'vp_recovery_salt';
 
 export function getDeviceId() {
   let deviceId = uni.getStorageSync(DEVICE_ID_STORAGE_KEY) as string;
@@ -174,12 +175,14 @@ export function clearToken() {
   uni.removeStorageSync(TOKEN_STORAGE_KEY);
   uni.removeStorageSync(KEY_BUNDLE_STORAGE_KEY);
   uni.removeStorageSync(RECOVERY_BUNDLE_STORAGE_KEY);
+  uni.removeStorageSync(RECOVERY_SALT_STORAGE_KEY);
 }
 
 /** vault_key 仅保存在内存，禁止写入 localStorage */
 let vaultKeyMemory: Uint8Array | null = null;
 let keyBundleMemory: EncryptedVaultKeyBundle | null = null;
 let recoveryBundleMemory: string | null = null;
+let recoverySaltMemory: string | null = null;
 let pendingVaultSetup:
   | {
       recoveryKey: string;
@@ -255,6 +258,19 @@ export const vaultSession = {
     }
     recoveryBundleMemory = (uni.getStorageSync(RECOVERY_BUNDLE_STORAGE_KEY) as string) || null;
     return recoveryBundleMemory;
+  },
+
+  setRecoverySalt(recoverySalt: string) {
+    recoverySaltMemory = recoverySalt;
+    uni.setStorageSync(RECOVERY_SALT_STORAGE_KEY, recoverySalt);
+  },
+
+  getRecoverySalt() {
+    if (recoverySaltMemory) {
+      return recoverySaltMemory;
+    }
+    recoverySaltMemory = (uni.getStorageSync(RECOVERY_SALT_STORAGE_KEY) as string) || null;
+    return recoverySaltMemory;
   },
 
   setPendingPhone(phone: string) {
@@ -341,6 +357,7 @@ export const vaultSession = {
     vaultSession.clearVaultKey();
     keyBundleMemory = null;
     recoveryBundleMemory = null;
+    recoverySaltMemory = null;
     pendingVaultSetup = null;
     clearToken();
     vaultSession.clearPendingRegisterIdentity();

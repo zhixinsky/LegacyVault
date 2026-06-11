@@ -21,8 +21,14 @@ onLoad(async () => {
   try {
     const profile = await getProfile();
     recoveryConfigured.value = profile.recoveryKeyConfigured ?? false;
+    if (profile.vaultKeyBundle) {
+      vaultSession.setKeyBundle(profile.vaultKeyBundle);
+    }
     if (profile.encryptedVaultKeyByRecovery) {
       vaultSession.setRecoveryBundle(profile.encryptedVaultKeyByRecovery);
+    }
+    if (profile.recoverySalt) {
+      vaultSession.setRecoverySalt(profile.recoverySalt);
     }
   } catch {
     // ignore

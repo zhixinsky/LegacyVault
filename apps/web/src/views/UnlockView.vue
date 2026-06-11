@@ -18,7 +18,6 @@ const error = ref('');
 onMounted(async () => {
   if (vaultSession.getRecoveryBundle()) {
     recoveryConfigured.value = true;
-    return;
   }
   try {
     const profile = await getProfile();
@@ -27,10 +26,16 @@ onMounted(async () => {
       return;
     }
     recoveryConfigured.value = profile.recoveryKeyConfigured ?? false;
-    recoveryHint.value = profile.recoveryKeyHint ?? '';
+    recoveryHint.value = profile.recoveryKeyHint ?? '';
+    if (profile.vaultKeyBundle) {
+      vaultSession.setKeyBundle(profile.vaultKeyBundle);
+    }
     if (profile.encryptedVaultKeyByRecovery) {
-      vaultSession.setRecoveryBundle(profile.encryptedVaultKeyByRecovery);
-    }
+      vaultSession.setRecoveryBundle(profile.encryptedVaultKeyByRecovery);
+    }
+    if (profile.recoverySalt) {
+      vaultSession.setRecoverySalt(profile.recoverySalt);
+    }
   } catch {
     // ignore
   }

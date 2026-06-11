@@ -1033,6 +1033,8 @@ export class AuthService {
 
         passwordSalt: true,
 
+        recoverySalt: true,
+
         kdfParams: true,
 
       },
@@ -1086,6 +1088,8 @@ export class AuthService {
       } : undefined,
 
       encryptedVaultKeyByRecovery: user.encryptedVaultKeyByRecovery ?? undefined,
+
+      recoverySalt: user.recoverySalt ?? undefined,
 
     };
 

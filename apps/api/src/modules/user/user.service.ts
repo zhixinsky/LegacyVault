@@ -34,6 +34,10 @@ export class UserService {
         status: true,
         mfaEnabled: true,
         hasVault: true,
+        encryptedVaultKey: true,
+        passwordSalt: true,
+        recoverySalt: true,
+        kdfParams: true,
         recoveryKeyHint: true,
         encryptedVaultKeyByRecovery: true,
         wxOpenid: true,
@@ -57,7 +61,13 @@ export class UserService {
       hasVault: user.hasVault,
       recoveryKeyConfigured: Boolean(user.encryptedVaultKeyByRecovery),
       recoveryKeyHint: user.recoveryKeyHint ?? undefined,
+      vaultKeyBundle: user.hasVault && user.encryptedVaultKey && user.passwordSalt && user.kdfParams ? {
+        encryptedVaultKey: user.encryptedVaultKey,
+        kdfSalt: user.passwordSalt,
+        kdfParams: user.kdfParams,
+      } : undefined,
       encryptedVaultKeyByRecovery: user.encryptedVaultKeyByRecovery ?? undefined,
+      recoverySalt: user.recoverySalt ?? undefined,
       wxBound: Boolean(user.wxOpenid),
       lastLoginAt: user.lastLoginAt?.toISOString(),
       createdAt: user.createdAt.toISOString(),
@@ -150,6 +160,7 @@ export class UserService {
       where: { id: userId },
       data: {
         encryptedVaultKeyByRecovery: dto.encryptedVaultKeyByRecovery,
+        recoverySalt: dto.recoverySalt,
         recoveryKeyHint: dto.recoveryKeyHint,
       },
     });

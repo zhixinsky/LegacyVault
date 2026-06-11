@@ -51,6 +51,7 @@ export async function buildCreateVaultPayload(masterPassword: string) {
   return {
     vaultKey,
     recoveryKey,
+    recoverySalt: recovery.kdfSalt,
     keyBundle: {
       encryptedVaultKey,
       kdfSalt: master.kdfSalt,
@@ -190,13 +191,29 @@ function deriveRecoveryKey(recoveryPassphrase: string) {
 
 export async function buildRecoveryKeyPayload(recoveryPassphrase: string) {
   const vaultKey = vaultSession.requireVaultKey();
-  return encryptJson({ vaultKey: bytesToBase64(vaultKey) }, deriveRecoveryKey(recoveryPassphrase));
+  const recovery = deriveRecoveryKeyByPhrase(recoveryPassphrase);
+  return {
+    encryptedVaultKeyByRecovery: await encryptVaultKeyByRecovery(vaultKey, recovery.masterKey),
+    recoverySalt: recovery.kdfSalt,
+  };
 }
 
 export async function unlockVaultWithRecoveryKey(
   recoveryPassphrase: string,
   encryptedVaultKeyByRecovery: string,
 ) {
+  const recoverySalt = vaultSession.getRecoverySalt();
+  if (recoverySalt) {
+    const derived = deriveRecoveryKeyByPhrase(
+      recoveryPassphrase,
+      recoverySalt,
+      vaultSession.getKeyBundle()?.kdfParams,
+    );
+    const vaultKey = await decryptVaultKey(encryptedVaultKeyByRecovery, derived.masterKey);
+    vaultSession.setVaultKey(vaultKey);
+    return vaultKey;
+  }
+
   const payload = await decryptJson<{ vaultKey: string }>(
     encryptedVaultKeyByRecovery,
     deriveRecoveryKey(recoveryPassphrase),

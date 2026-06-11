@@ -19,6 +19,7 @@ export interface AuthResult {
       parallelism: number;
     };
   };
+  recoverySalt?: string;
 }
 
 export function register(payload: {
@@ -111,6 +112,9 @@ export function persistAuthResult(result: AuthResult) {
   if (result.encryptedVaultKeyByRecovery) {
     vaultSession.setRecoveryBundle(result.encryptedVaultKeyByRecovery);
   }
+  if (result.recoverySalt) {
+    vaultSession.setRecoverySalt(result.recoverySalt);
+  }
 }
 
 export function createVault(payload: {
@@ -160,9 +164,11 @@ export function heartbeat() {
 
 export interface ExtendedUserProfile extends UserProfile {
   mfaEnabled: boolean;
+  vaultKeyBundle?: NonNullable<AuthResult['vaultKeyBundle']>;
   recoveryKeyConfigured?: boolean;
   recoveryKeyHint?: string;
   encryptedVaultKeyByRecovery?: string;
+  recoverySalt?: string;
   wxBound?: boolean;
 }
 
@@ -282,6 +288,7 @@ export function logDataExport(mfaCode?: string) {
 
 export function setupRecoveryKey(payload: {
   encryptedVaultKeyByRecovery: string;
+  recoverySalt?: string;
   recoveryKeyHint?: string;
 }, mfaCode?: string) {
   return request<{ configured: boolean }>({

@@ -49,8 +49,14 @@ async function loadProfile() {
     mfaEnabled.value = profile.mfaEnabled;
     recoveryConfigured.value = profile.recoveryKeyConfigured ?? false;
     recoveryHint.value = profile.recoveryKeyHint ?? '';
+    if (profile.vaultKeyBundle) {
+      vaultSession.setKeyBundle(profile.vaultKeyBundle);
+    }
     if (profile.encryptedVaultKeyByRecovery) {
       vaultSession.setRecoveryBundle(profile.encryptedVaultKeyByRecovery);
+    }
+    if (profile.recoverySalt) {
+      vaultSession.setRecoverySalt(profile.recoverySalt);
     }
   } catch {
     // ignore
@@ -161,15 +167,17 @@ async function handleSetupRecovery() {
   }
   recoveryLoading.value = true;
   try {
-    const encryptedVaultKeyByRecovery = await buildRecoveryKeyPayload(recoveryPassphrase.value);
+    const recoveryPayload = await buildRecoveryKeyPayload(recoveryPassphrase.value);
     await setupRecoveryKey(
       {
-        encryptedVaultKeyByRecovery,
+        encryptedVaultKeyByRecovery: recoveryPayload.encryptedVaultKeyByRecovery,
+        recoverySalt: recoveryPayload.recoverySalt,
         recoveryKeyHint: recoveryHintInput.value || undefined,
       },
       recoveryMfaCode.value || undefined,
     );
-    vaultSession.setRecoveryBundle(encryptedVaultKeyByRecovery);
+    vaultSession.setRecoveryBundle(recoveryPayload.encryptedVaultKeyByRecovery);
+    vaultSession.setRecoverySalt(recoveryPayload.recoverySalt);
     recoveryConfigured.value = true;
     recoveryHint.value = recoveryHintInput.value;
     recoveryPassphrase.value = '';

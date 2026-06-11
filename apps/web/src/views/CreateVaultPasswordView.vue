@@ -43,6 +43,7 @@ async function handleCreate() {
     await createVault(result.createPayload);
     vaultSession.setKeyBundle(result.keyBundle);
     vaultSession.setRecoveryBundle(result.recoveryBundle);
+    vaultSession.setRecoverySalt(result.recoverySalt);
     vaultSession.setVaultKey(result.vaultKey);
     vaultSession.setPendingVaultSetup({
       recoveryKey: result.recoveryKey,

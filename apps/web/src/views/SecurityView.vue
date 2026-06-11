@@ -93,11 +93,17 @@ async function loadAll() {
 
     devices.value = deviceResult.items;
     notifications.value = notificationResult.items;
+    if (profile.vaultKeyBundle) {
+      vaultSession.setKeyBundle(profile.vaultKeyBundle);
+    }
 
     if (profile.encryptedVaultKeyByRecovery) {
 
       vaultSession.setRecoveryBundle(profile.encryptedVaultKeyByRecovery);
 
+    }
+    if (profile.recoverySalt) {
+      vaultSession.setRecoverySalt(profile.recoverySalt);
     }
 
   } catch (err) {
@@ -206,13 +212,15 @@ async function handleSetupRecovery() {
 
   try {
 
-    const encryptedVaultKeyByRecovery = await buildRecoveryKeyPayload(recoveryPassphrase.value);
+    const recoveryPayload = await buildRecoveryKeyPayload(recoveryPassphrase.value);
 
     await setupRecoveryKey(
 
       {
 
-        encryptedVaultKeyByRecovery,
+        encryptedVaultKeyByRecovery: recoveryPayload.encryptedVaultKeyByRecovery,
+
+        recoverySalt: recoveryPayload.recoverySalt,
 
         recoveryKeyHint: recoveryHintInput.value || undefined,
 
@@ -222,7 +230,8 @@ async function handleSetupRecovery() {
 
     );
 
-    vaultSession.setRecoveryBundle(encryptedVaultKeyByRecovery);
+    vaultSession.setRecoveryBundle(recoveryPayload.encryptedVaultKeyByRecovery);
+    vaultSession.setRecoverySalt(recoveryPayload.recoverySalt);
 
     recoveryConfigured.value = true;
 
