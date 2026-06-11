@@ -7,6 +7,7 @@ import {
   loginWithCode,
   loginWithPassword,
   persistAuthResult,
+  register,
   sendEmailLoginCode,
   sendLoginCode,
   wechatPhoneLogin,
@@ -79,15 +80,13 @@ async function goRegisterFromLogin(result?: Extract<AuthLoginResponse, { registe
   loading.value = true;
   try {
     const wxCode = vaultSession.getPendingWxCode();
-    const auth = await import('@/utils/services').then((m) =>
-      m.register({
-        phone: vaultSession.getPendingPhone() || undefined,
-        email: vaultSession.getPendingEmail() || undefined,
-        username: vaultSession.getPendingUsername() || undefined,
-        password: vaultSession.getPendingPassword() || undefined,
-        ...(wxCode ? { wxCode } : {}),
-      }),
-    );
+    const auth = await register({
+      phone: vaultSession.getPendingPhone() || undefined,
+      email: vaultSession.getPendingEmail() || undefined,
+      username: vaultSession.getPendingUsername() || undefined,
+      password: vaultSession.getPendingPassword() || undefined,
+      ...(wxCode ? { wxCode } : {}),
+    });
     persistAuthResult(auth);
     vaultSession.clearPendingRegisterIdentity();
     uni.navigateTo({ url: '/pages/create-vault-password/create-vault-password' });
