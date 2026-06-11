@@ -38,7 +38,7 @@ function goBack() {
 
 async function handleCreateVault() {
   if (!canSubmit.value) {
-    uni.showToast({ title: '请按规则设置主密码', icon: 'none' });
+    uni.showToast({ title: '请按规则填写主密码', icon: 'none' });
     return;
   }
 
