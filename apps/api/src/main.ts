@@ -37,11 +37,20 @@ async function bootstrap() {
 
   const config = app.get(ConfigService);
   const listenPort = Number(config.get<string>('API_PORT') ?? port);
-  const webRoot = config.get<string>('WEB_STATIC_PATH') || join(__dirname, '..', 'public');
+  const configuredWebRoot = config.get<string>('WEB_STATIC_PATH')?.trim();
+  const bundledWebRoot = join(__dirname, '..', 'public');
+  const webRoot =
+    [configuredWebRoot, bundledWebRoot].filter(Boolean).find((candidate) => existsSync(join(candidate!, 'index.html'))) ??
+    configuredWebRoot ??
+    bundledWebRoot;
   const webIndex = join(webRoot, 'index.html');
   const serveWeb = existsSync(webIndex);
 
-  await app.init();
+  if (configuredWebRoot && configuredWebRoot !== webRoot) {
+    console.warn(
+      `[web] WEB_STATIC_PATH=${configuredWebRoot} 未找到 index.html，已回退到内置静态目录 ${webRoot}`,
+    );
+  }
 
   if (serveWeb) {
     app.useStaticAssets(webRoot);
@@ -56,13 +65,16 @@ async function bootstrap() {
       }
       res.sendFile(webIndex);
     });
+  } else {
+    console.warn(`[web] 未找到 PC Web 入口文件：${webIndex}，当前仅提供 API /api/v1`);
   }
 
+  await app.init();
   await app.listen(listenPort, '0.0.0.0');
 
   const modes = ['API /api/v1'];
   if (serveWeb) {
-    modes.push('PC Web /');
+    modes.push(`PC Web / -> ${webRoot}`);
   }
   console.log(`VaultPass listening on 0.0.0.0:${listenPort} (${modes.join(', ')})`);
 }
