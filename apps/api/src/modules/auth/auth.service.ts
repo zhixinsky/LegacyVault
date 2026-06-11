@@ -699,6 +699,73 @@ export class AuthService {
     return { bound: false };
   }
 
+  async bindPhoneByWechat(userId: string, code: string, meta: { ip?: string; device?: string }) {
+    const phone = await this.wechatAuthService.resolvePhoneNumber(code);
+    const taken = await this.prisma.user.findFirst({
+      where: {
+        phone,
+        NOT: { id: userId },
+      },
+    });
+
+    if (taken) {
+      throw new ConflictException('该手机号已绑定其他账户');
+    }
+
+    await this.prisma.user.update({
+      where: { id: userId },
+      data: { phone },
+    });
+
+    await this.auditLogService.log({
+      userId,
+      actorId: userId,
+      action: 'user.phone.bind',
+      ip: meta.ip,
+      device: meta.device,
+      riskLevel: AuditRiskLevel.medium,
+    });
+
+    return { bound: true, phone };
+  }
+
+  async bindEmailByCode(
+    userId: string,
+    email: string,
+    code: string,
+    meta: { ip?: string; device?: string },
+  ) {
+    const normalizedEmail = email.trim().toLowerCase();
+    this.verifyOtp(this.emailOtpKey(normalizedEmail), code);
+
+    const taken = await this.prisma.user.findFirst({
+      where: {
+        email: normalizedEmail,
+        NOT: { id: userId },
+      },
+    });
+
+    if (taken) {
+      throw new ConflictException('该邮箱已绑定其他账户');
+    }
+
+    await this.prisma.user.update({
+      where: { id: userId },
+      data: { email: normalizedEmail },
+    });
+
+    await this.auditLogService.log({
+      userId,
+      actorId: userId,
+      action: 'user.email.bind',
+      ip: meta.ip,
+      device: meta.device,
+      riskLevel: AuditRiskLevel.medium,
+    });
+
+    return { bound: true, email: normalizedEmail };
+  }
+
   private async completeLogin(
 
     userId: string,

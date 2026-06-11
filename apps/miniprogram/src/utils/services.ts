@@ -412,6 +412,22 @@ export function bindWechat(code: string) {
   });
 }
 
+export function bindWechatPhone(code: string) {
+  return request<{ bound: boolean; phone: string }>({
+    url: '/auth/me/phone/bind',
+    method: 'POST',
+    data: { code },
+  });
+}
+
+export function bindEmailWithCode(email: string, code: string) {
+  return request<{ bound: boolean; email: string }>({
+    url: '/auth/me/email/bind',
+    method: 'POST',
+    data: { email, code },
+  });
+}
+
 export function unbindWechat() {
   return request<{ bound: boolean }>({
     url: '/auth/me/wechat/unbind',

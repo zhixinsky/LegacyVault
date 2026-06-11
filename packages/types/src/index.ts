@@ -61,6 +61,7 @@ export interface PaginatedResponse<T> {
 /** 用户基础信息（不含敏感字段） */
 export interface UserProfile {
   id: string;
+  username?: string;
   phone?: string;
   email?: string;
   status: UserStatus;

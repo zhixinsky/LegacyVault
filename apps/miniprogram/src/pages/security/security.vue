@@ -9,7 +9,6 @@ import {
 import { vaultSession } from '@/utils/api';
 import { buildRecoveryKeyPayload } from '@/utils/crypto-flow';
 import {
-  bindWechat,
   disableMfa,
   enableMfa,
   getProfile,
@@ -19,7 +18,6 @@ import {
   revokeLoginDevice,
   setupMfa,
   setupRecoveryKey,
-  unbindWechat,
 } from '@/utils/services';
 
 const logs = ref<Array<{ id: string; actionLabel: string; riskLevel: string; time: string }>>([]);
@@ -27,7 +25,6 @@ const notifications = ref<
   Array<{ id: string; typeLabel: string; channelLabel: string; status: string; time: string }>
 >([]);
 const mfaEnabled = ref(false);
-const wxBound = ref(false);
 const recoveryConfigured = ref(false);
 const recoveryHint = ref('');
 const setupSecret = ref('');
@@ -40,7 +37,6 @@ const recoveryMfaCode = ref('');
 const devices = ref<Array<{ id: string; deviceName?: string; ip?: string; lastActiveAt: string }>>([]);
 const loading = ref(false);
 const mfaLoading = ref(false);
-const wxLoading = ref(false);
 const recoveryLoading = ref(false);
 
 onShow(async () => {
@@ -51,7 +47,6 @@ async function loadProfile() {
   try {
     const profile = await getProfile();
     mfaEnabled.value = profile.mfaEnabled;
-    wxBound.value = profile.wxBound ?? false;
     recoveryConfigured.value = profile.recoveryKeyConfigured ?? false;
     recoveryHint.value = profile.recoveryKeyHint ?? '';
     if (profile.encryptedVaultKeyByRecovery) {
@@ -159,43 +154,6 @@ async function handleDisableMfa() {
   }
 }
 
-async function handleBindWechat() {
-  wxLoading.value = true;
-  try {
-    const loginRes = await new Promise<UniApp.LoginRes>((resolve, reject) => {
-      uni.login({ provider: 'weixin', success: resolve, fail: reject });
-    });
-    if (!loginRes.code) throw new Error('微信授权失败');
-    await bindWechat(loginRes.code);
-    wxBound.value = true;
-    uni.showToast({ title: '微信已绑定', icon: 'success' });
-  } catch (error) {
-    uni.showToast({ title: error instanceof Error ? error.message : '绑定失败', icon: 'none' });
-  } finally {
-    wxLoading.value = false;
-  }
-}
-
-function handleUnbindWechat() {
-  uni.showModal({
-    title: '解绑微信',
-    content: '解绑后将无法使用微信快捷登录和 PC 扫码登录',
-    success: async (result) => {
-      if (!result.confirm) return;
-      wxLoading.value = true;
-      try {
-        await unbindWechat();
-        wxBound.value = false;
-        uni.showToast({ title: '已解绑', icon: 'success' });
-      } catch (error) {
-        uni.showToast({ title: error instanceof Error ? error.message : '解绑失败', icon: 'none' });
-      } finally {
-        wxLoading.value = false;
-      }
-    },
-  });
-}
-
 async function handleSetupRecovery() {
   if (!recoveryPassphrase.value || recoveryPassphrase.value !== recoveryConfirm.value) {
     uni.showToast({ title: '两次输入的恢复密钥不一致', icon: 'none' });
@@ -265,7 +223,7 @@ function lockVault() {
   <view class="container">
     <view class="card">
       <text class="title">安全中心</text>
-      <text class="subtitle">二次验证、微信绑定、恢复密钥与设备管理</text>
+      <text class="subtitle">二次验证、恢复密钥、登录设备与审计记录</text>
 
       <view class="section">
         <text class="section-title">二次验证 (TOTP)</text>
@@ -280,13 +238,6 @@ function lockVault() {
           <input v-model="disableCode" class="input" placeholder="输入验证码以关闭" />
           <button class="btn btn-secondary" @tap="handleDisableMfa">关闭二次验证</button>
         </view>
-      </view>
-
-      <view class="section">
-        <text class="section-title">微信绑定</text>
-        <text v-if="wxBound" class="hint success-text">已绑定，可用于快捷登录与 PC 扫码确认</text>
-        <button v-if="!wxBound" class="btn btn-primary" :loading="wxLoading" @tap="handleBindWechat">绑定微信</button>
-        <button v-else class="btn btn-secondary" :loading="wxLoading" @tap="handleUnbindWechat">解绑微信</button>
       </view>
 
       <view class="section">

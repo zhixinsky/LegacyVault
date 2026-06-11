@@ -341,6 +341,42 @@ export class AuthController {
 
   }
 
+
+
+  @Post('me/phone/bind')
+
+  bindPhone(
+
+    @CurrentUser() user: AuthUser,
+
+    @Body() dto: WechatPhoneDto,
+
+    @Req() req: Request,
+
+  ) {
+
+    return this.authService.bindPhoneByWechat(user.userId, dto.code, getRequestMeta(req));
+
+  }
+
+
+
+  @Post('me/email/bind')
+
+  bindEmail(
+
+    @CurrentUser() user: AuthUser,
+
+    @Body() dto: LoginWithEmailCodeDto,
+
+    @Req() req: Request,
+
+  ) {
+
+    return this.authService.bindEmailByCode(user.userId, dto.email, dto.code, getRequestMeta(req));
+
+  }
+
 }
 
 

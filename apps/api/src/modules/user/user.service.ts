@@ -1,4 +1,5 @@
 import {
+  BadRequestException,
   ConflictException,
   Injectable,
   NotFoundException,
@@ -27,6 +28,7 @@ export class UserService {
       where: { id: userId },
       select: {
         id: true,
+        username: true,
         phone: true,
         email: true,
         status: true,
@@ -46,6 +48,7 @@ export class UserService {
 
     return {
       id: user.id,
+      username: user.username ?? undefined,
       phone: user.phone ?? undefined,
       email: user.email ?? undefined,
       status: user.status,
@@ -65,6 +68,10 @@ export class UserService {
     dto: UpdateUserDto,
     meta: { ip?: string; device?: string },
   ) {
+    if (dto.phone || dto.email) {
+      throw new BadRequestException('手机号和邮箱请通过验证绑定流程修改');
+    }
+
     if (dto.phone) {
       const exists = await this.prisma.user.findFirst({
         where: { phone: dto.phone, NOT: { id: userId } },
