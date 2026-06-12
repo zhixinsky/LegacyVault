@@ -21,6 +21,19 @@ import {
 import type { FileMetadata } from '@vaultpass/types';
 import { vaultSession } from '@/utils/api';
 
+export const MAX_ORIGINAL_UPLOAD_BYTES = 180 * 1024 * 1024;
+
+export function assertUploadFileSize(file: File) {
+  if (file.size > MAX_ORIGINAL_UPLOAD_BYTES) {
+    throw new Error(`单个文件不能超过 ${formatUploadSize(MAX_ORIGINAL_UPLOAD_BYTES)}，较大的视频请压缩后再上传`);
+  }
+}
+
+export function formatUploadSize(size: number) {
+  if (size < 1024 * 1024) return `${Math.round(size / 1024)}KB`;
+  return `${Math.round(size / 1024 / 1024)}MB`;
+}
+
 export async function registerWithMasterPassword(phone: string, masterPassword: string) {
   const derived = deriveMasterKeyByPassword(masterPassword);
   const vaultKey = generateVaultKey();
@@ -127,6 +140,7 @@ export async function prepareEncryptedUpload(
   albumId?: string,
   metadata?: FileMetadata,
 ) {
+  assertUploadFileSize(file);
   const vaultKey = vaultSession.requireVaultKey();
   const fileData = new Uint8Array(await file.arrayBuffer());
   const fileKey = generateFileKey();

@@ -57,6 +57,12 @@ const mfaEnabled = ref(false);
 const mfaCode = ref('');
 const insertMenuOpen = ref(false);
 const insertMenuPosition = ref({ left: 24, top: 24 });
+const codeLanguageControl = ref({
+  visible: false,
+  left: 24,
+  top: 24,
+  language: '',
+});
 const previewUrls = new Map<string, string>();
 let autoSaveTimer: number | undefined;
 let suppressUpdate = false;
@@ -102,7 +108,11 @@ const editor = useEditor({
   },
   onUpdate: () => {
     if (suppressUpdate) return;
+    updateCodeLanguageControl();
     markDirty();
+  },
+  onSelectionUpdate: () => {
+    updateCodeLanguageControl();
   },
 });
 
@@ -235,14 +245,8 @@ async function handleImageUpload(event: Event) {
   const input = event.target as HTMLInputElement;
   const file = input.files?.[0];
   if (!file) return;
-  uploadingAsset.value = true;
-  error.value = '';
   try {
-    const prepared = await prepareEncryptedUpload(file, 'image', undefined, {
-      displayName: file.name,
-      tags: '私密笔记',
-    });
-    const uploaded = await uploadEncryptedFile(prepared.blob, prepared.formData) as VaultFileItem;
+    const uploaded = await uploadNoteAsset(file, 'image');
     const src = URL.createObjectURL(file);
     previewUrls.set(uploaded.id, src);
     editor.value?.chain().focus().insertContent({
@@ -253,7 +257,6 @@ async function handleImageUpload(event: Event) {
   } catch (err) {
     error.value = err instanceof Error ? err.message : '图片上传失败';
   } finally {
-    uploadingAsset.value = false;
     input.value = '';
   }
 }
@@ -262,14 +265,8 @@ async function handleAttachmentUpload(event: Event) {
   const input = event.target as HTMLInputElement;
   const file = input.files?.[0];
   if (!file) return;
-  uploadingAsset.value = true;
-  error.value = '';
   try {
-    const prepared = await prepareEncryptedUpload(file, 'document', undefined, {
-      displayName: file.name,
-      tags: '私密笔记',
-    });
-    const uploaded = await uploadEncryptedFile(prepared.blob, prepared.formData) as VaultFileItem;
+    const uploaded = await uploadNoteAsset(file, 'document');
     editor.value?.chain().focus().insertContent({
       type: 'encryptedAttachment',
       attrs: buildAssetAttrs(uploaded, file.name),
@@ -278,7 +275,6 @@ async function handleAttachmentUpload(event: Event) {
   } catch (err) {
     error.value = err instanceof Error ? err.message : '附件上传失败';
   } finally {
-    uploadingAsset.value = false;
     input.value = '';
   }
 }
@@ -287,14 +283,8 @@ async function handleVideoUpload(event: Event) {
   const input = event.target as HTMLInputElement;
   const file = input.files?.[0];
   if (!file) return;
-  uploadingAsset.value = true;
-  error.value = '';
   try {
-    const prepared = await prepareEncryptedUpload(file, 'video', undefined, {
-      displayName: file.name,
-      tags: '私密笔记',
-    });
-    const uploaded = await uploadEncryptedFile(prepared.blob, prepared.formData) as VaultFileItem;
+    const uploaded = await uploadNoteAsset(file, 'video');
     const src = URL.createObjectURL(file);
     previewUrls.set(uploaded.id, src);
     editor.value?.chain().focus().insertContent({
@@ -305,8 +295,21 @@ async function handleVideoUpload(event: Event) {
   } catch (err) {
     error.value = err instanceof Error ? err.message : '视频上传失败';
   } finally {
-    uploadingAsset.value = false;
     input.value = '';
+  }
+}
+
+async function uploadNoteAsset(file: File, fileType: 'image' | 'video' | 'document') {
+  uploadingAsset.value = true;
+  error.value = '';
+  try {
+    const prepared = await prepareEncryptedUpload(file, fileType, undefined, {
+      displayName: file.name,
+      tags: '私密笔记',
+    });
+    return await uploadEncryptedFile(prepared.blob, prepared.formData) as VaultFileItem;
+  } finally {
+    uploadingAsset.value = false;
   }
 }
 
@@ -418,12 +421,6 @@ function applyLink() {
   editor.value?.chain().focus().extendMarkRange('link').setLink({ href: url.trim() }).run();
 }
 
-function applyCodeLanguage() {
-  const language = window.prompt('代码语言，例如 javascript / python / sql', 'javascript');
-  if (language === null) return;
-  editor.value?.chain().focus().setCodeBlock({ language: language.trim() }).run();
-}
-
 function openInsertMenuAtSelection(position?: number) {
   if (mode.value !== 'edit') return;
   const view = editor.value?.view;
@@ -435,11 +432,52 @@ function openInsertMenuAtSelection(position?: number) {
 
   const coords = view.coordsAtPos(position ?? view.state.selection.from);
   const shellRect = shell.getBoundingClientRect();
+  const menuWidth = 208;
+  const menuHeight = 360;
+  const hasRoomBelow = window.innerHeight - coords.bottom > menuHeight + 24;
   insertMenuPosition.value = {
-    left: Math.max(12, Math.min(coords.left - shellRect.left, shellRect.width - 208)),
-    top: Math.max(12, coords.bottom - shellRect.top + 8),
+    left: Math.max(12, Math.min(coords.left - shellRect.left, shellRect.width - menuWidth)),
+    top: hasRoomBelow
+      ? Math.max(12, coords.bottom - shellRect.top + 8)
+      : Math.max(12, coords.top - shellRect.top - menuHeight - 8),
   };
   insertMenuOpen.value = true;
+}
+
+function updateCodeLanguageControl() {
+  const instance = editor.value;
+  const shell = editorShell.value;
+  if (!instance || !shell || mode.value !== 'edit' || !instance.isActive('codeBlock')) {
+    codeLanguageControl.value.visible = false;
+    return;
+  }
+
+  const { from } = instance.state.selection;
+  const shellRect = shell.getBoundingClientRect();
+  const domAtPos = instance.view.domAtPos(from);
+  const element = domAtPos.node instanceof Element
+    ? domAtPos.node
+    : domAtPos.node.parentElement;
+  const codeBlock = element?.closest('pre');
+  if (!codeBlock) {
+    codeLanguageControl.value.visible = false;
+    return;
+  }
+
+  const rect = codeBlock.getBoundingClientRect();
+  codeLanguageControl.value = {
+    visible: true,
+    left: Math.max(12, rect.right - shellRect.left - 170),
+    top: Math.max(12, rect.top - shellRect.top + 10),
+    language: String(instance.getAttributes('codeBlock').language ?? ''),
+  };
+}
+
+function setCodeLanguage(event: Event) {
+  const language = (event.target as HTMLSelectElement).value;
+  editor.value?.chain().focus().setCodeBlock({ language }).run();
+  codeLanguageControl.value.language = language;
+  updateCodeLanguageControl();
 }
 
 function formatTime(value: string) {
@@ -463,7 +501,10 @@ function insertBlock(kind: 'paragraph' | 'heading' | 'table' | 'image' | 'video'
   if (kind === 'image') imageInput.value?.click();
   if (kind === 'video') videoInput.value?.click();
   if (kind === 'attachment') attachmentInput.value?.click();
-  if (kind === 'code') applyCodeLanguage();
+  if (kind === 'code') {
+    editor.value?.chain().focus().setCodeBlock({ language: 'javascript' }).run();
+    updateCodeLanguageControl();
+  }
   if (kind === 'quote') editor.value?.chain().focus().toggleBlockquote().run();
   if (kind === 'todo') editor.value?.chain().focus().toggleTaskList().run();
 }
@@ -526,7 +567,7 @@ function setMode(nextMode: 'read' | 'edit') {
           @input="markDirty"
         />
 
-        <div ref="editorShell" class="relative overflow-hidden rounded-2xl border border-slate-200 bg-white">
+        <div ref="editorShell" class="relative overflow-visible rounded-2xl border border-slate-200 bg-white">
           <button
             v-if="mode === 'edit'"
             class="absolute right-4 top-4 z-10 rounded-xl bg-blue-50 px-3 py-2 text-sm font-bold text-blue-700 hover:bg-blue-100"
@@ -559,6 +600,26 @@ function setMode(nextMode: 'read' | 'edit') {
             <button class="insert-menu-btn" @click="editor?.chain().focus().undo().run(); insertMenuOpen = false">撤销</button>
             <button class="insert-menu-btn" @click="editor?.chain().focus().redo().run(); insertMenuOpen = false">重做</button>
           </div>
+          <label
+            v-if="codeLanguageControl.visible"
+            class="code-language-control"
+            :style="{ left: `${codeLanguageControl.left}px`, top: `${codeLanguageControl.top}px` }"
+          >
+            <span>语言</span>
+            <select :value="codeLanguageControl.language" @change="setCodeLanguage">
+              <option value="">plain text</option>
+              <option value="javascript">javascript</option>
+              <option value="typescript">typescript</option>
+              <option value="python">python</option>
+              <option value="java">java</option>
+              <option value="go">go</option>
+              <option value="sql">sql</option>
+              <option value="json">json</option>
+              <option value="html">html</option>
+              <option value="css">css</option>
+              <option value="bash">bash</option>
+            </select>
+          </label>
           <input ref="imageInput" type="file" accept="image/*" class="hidden" @change="handleImageUpload" />
           <input ref="videoInput" type="file" accept="video/*" class="hidden" @change="handleVideoUpload" />
           <input ref="attachmentInput" type="file" class="hidden" @change="handleAttachmentUpload" />
@@ -630,6 +691,34 @@ function setMode(nextMode: 'read' | 'edit') {
   color: #1d4ed8;
 }
 
+.code-language-control {
+  position: absolute;
+  z-index: 20;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  border: 1px solid rgba(147, 197, 253, 0.55);
+  border-radius: 999px;
+  background: rgba(15, 23, 42, 0.86);
+  padding: 5px 8px 5px 10px;
+  color: #bfdbfe;
+  font-size: 11px;
+  font-weight: 800;
+  backdrop-filter: blur(10px);
+}
+
+.code-language-control select {
+  max-width: 108px;
+  border: 0;
+  border-radius: 999px;
+  background: #dbeafe;
+  padding: 4px 8px;
+  color: #0f172a;
+  font-size: 11px;
+  font-weight: 800;
+  outline: none;
+}
+
 :deep(.rich-note-editor) {
   min-height: 520px;
   padding: 28px;
@@ -683,7 +772,10 @@ function setMode(nextMode: 'read' | 'edit') {
   overflow-x: auto;
   border-radius: 16px;
   background: #0f172a;
-  padding: 16px;
+  border: 1px solid #1e3a8a;
+  box-shadow: inset 0 0 0 1px rgba(147, 197, 253, 0.08);
+  min-height: 96px;
+  padding: 46px 16px 16px;
   color: #dbeafe;
   font-size: 13px;
   position: relative;
@@ -691,8 +783,9 @@ function setMode(nextMode: 'read' | 'edit') {
 
 :deep(.rich-note-editor pre[data-language]::before) {
   content: attr(data-language);
-  display: block;
-  margin-bottom: 10px;
+  position: absolute;
+  left: 16px;
+  top: 14px;
   color: #93c5fd;
   font-size: 11px;
   font-weight: 800;

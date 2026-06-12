@@ -276,7 +276,14 @@ export async function uploadEncryptedFile(file: Blob, formData: Record<string, s
   });
 
   if (!response.ok) {
-    throw new Error(`上传失败 (${response.status})`);
+    let message = `上传失败 (${response.status})`;
+    try {
+      const payload = (await response.json()) as { message?: string };
+      if (payload.message) message = payload.message;
+    } catch {
+      // keep status-only message when the server returns a non-JSON 500 page.
+    }
+    throw new Error(message);
   }
 
   const envelope = (await response.json()) as ApiEnvelope<unknown>;

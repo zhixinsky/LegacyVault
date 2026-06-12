@@ -24,6 +24,8 @@ import { ListFilesQueryDto, RegisterFileDto } from './dto/file.dto';
 import { UpdateFileDto } from './dto/update-file.dto';
 import { FileService } from './file.service';
 
+const MAX_ENCRYPTED_UPLOAD_BYTES = 300 * 1024 * 1024;
+
 @Controller('files')
 export class FileController {
   constructor(private readonly fileService: FileService) {}
@@ -70,7 +72,7 @@ export class FileController {
   @UseInterceptors(
     FileInterceptor('file', {
       storage: memoryStorage(),
-      limits: { fileSize: 100 * 1024 * 1024 },
+      limits: { fileSize: MAX_ENCRYPTED_UPLOAD_BYTES },
     }),
   )
   async upload(

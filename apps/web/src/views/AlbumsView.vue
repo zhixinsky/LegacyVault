@@ -407,6 +407,9 @@ function fileLabel(file: VaultFileItem) {
           class="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm"
           placeholder="上传时添加标签（逗号分隔，可选）"
         />
+        <p class="mt-2 text-xs text-slate-500">
+          视频会先在本机加密再上传，单个原始文件请控制在 180MB 以内。
+        </p>
       </div>
 
       <div v-if="mfaEnabled && selectedAlbumId" class="mt-4 rounded-lg bg-amber-50 p-3 text-sm text-amber-800">
