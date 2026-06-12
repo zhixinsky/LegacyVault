@@ -17,7 +17,8 @@ import { downloadEncryptedFile, uploadEncryptedFile } from '@/utils/api';
 import { decryptVaultPayload, decryptVaultTitle, encryptVaultItemPayload } from '@/utils/crypto-flow';
 import { decryptDownloadedFile } from '@/utils/file-media';
 import { prepareEncryptedUpload } from '@/utils/crypto-flow';
-import { createVaultItem, getProfile, getVaultItem, updateVaultItem, verifyMfa, type VaultFileItem } from '@/utils/services';
+import { consumeNoteEditAuth } from '@/utils/note-edit-auth';
+import { createVaultItem, getProfile, getVaultItem, updateVaultItem, type VaultFileItem } from '@/utils/services';
 import {
   EncryptedAttachment,
   EncryptedImage,
@@ -46,7 +47,7 @@ const saving = ref(false);
 const error = ref('');
 const saveStatus = ref<'idle' | 'dirty' | 'saving' | 'saved' | 'failed'>('idle');
 const lastSavedAt = ref('');
-const mode = ref<'read' | 'edit'>(routeId.value ? 'read' : 'edit');
+const mode = ref<'read' | 'edit'>(routeId.value && route.query.mode === 'edit' ? 'edit' : routeId.value ? 'read' : 'edit');
 const imageInput = ref<HTMLInputElement | null>(null);
 const videoInput = ref<HTMLInputElement | null>(null);
 const attachmentInput = ref<HTMLInputElement | null>(null);
@@ -126,8 +127,15 @@ const editor = useEditor({
 editor.value?.setEditable(mode.value === 'edit');
 
 onMounted(async () => {
-  void loadMfaState();
+  await loadMfaState();
   if (!routeId.value) return;
+  const editMfaCode = consumeNoteEditAuth(routeId.value);
+  if (mfaEnabled.value && !editMfaCode) {
+    error.value = '请从笔记列表点击编辑，并完成二次验证后进入编辑页';
+    saveStatus.value = 'idle';
+    return;
+  }
+  mfaCode.value = editMfaCode;
   loading.value = true;
   try {
     const item = await getVaultItem(routeId.value);
@@ -561,23 +569,7 @@ function insertBlock(kind: 'paragraph' | 'heading' | 'table' | 'image' | 'video'
   if (kind === 'todo') editor.value?.chain().focus().toggleTaskList().run();
 }
 
-async function setMode(nextMode: 'read' | 'edit') {
-  if (nextMode === 'edit' && mode.value !== 'edit' && mfaEnabled.value) {
-    await requestMfaIfNeeded('编辑私密笔记前二次验证', async (code) => {
-      await verifyMfa(code);
-      mfaCode.value = code;
-      mode.value = 'edit';
-      insertMenuOpen.value = false;
-      codeLanguageControl.value.visible = false;
-      editor.value?.setEditable(true);
-      const doc = getEditorDoc();
-      if (doc) {
-        setEditorContent(await hydrateEncryptedMedia(stripRuntimeAssetUrls(doc)));
-      }
-    });
-    return;
-  }
-
+function setMode(nextMode: 'read' | 'edit') {
   mode.value = nextMode;
   insertMenuOpen.value = false;
   codeLanguageControl.value.visible = false;
@@ -625,6 +617,11 @@ async function setMode(nextMode: 'read' | 'edit') {
 
       <div v-if="loading && routeId" class="mt-8 rounded-2xl bg-slate-50 p-10 text-center text-slate-400">
         加载中...
+      </div>
+
+      <div v-else-if="error && routeId && !title" class="mt-8 rounded-2xl bg-amber-50 p-8 text-center ring-1 ring-amber-100">
+        <p class="text-sm font-semibold text-amber-800">{{ error }}</p>
+        <VButton class="mt-4" variant="secondary" @click="router.push('/app/notes')">返回笔记列表</VButton>
       </div>
 
       <div v-else class="mt-6 space-y-4">
