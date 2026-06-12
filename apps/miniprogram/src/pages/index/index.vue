@@ -134,7 +134,7 @@ function go(url: string, tab = false) {
 </script>
 
 <template>
-  <view class="home-page">
+  <view class="home-page tabbar-page">
     <view class="brand-card">
       <view class="brand-top">
         <view>

@@ -113,24 +113,22 @@ async function loadDashboard() {
       documentResult,
       stockResult,
       bankResult,
-      serverResult,
       fileResult,
       albumResult,
       allVaultResult,
     ] = await Promise.all([
-      listVaultItems('email_account'),
+      listVaultItems('password'),
       listVaultItems('note'),
       listVaultItems('document'),
       listVaultItems('stock_account'),
       listVaultItems('bank_account'),
-      listVaultItems('server_account'),
       listFiles(),
       listAlbums(),
       listVaultItems(undefined, 1),
     ]);
 
     updateCategoryCounts({
-      password: passwordResult.total + serverResult.total,
+      password: passwordResult.total,
       note: noteResult.total,
       document: documentResult.total,
       finance: stockResult.total + bankResult.total,
@@ -301,7 +299,7 @@ function showCreateSheet() {
 </script>
 
 <template>
-  <view class="vault-page">
+  <view class="vault-page tabbar-page">
     <view class="page-header">
       <text class="page-title">保险箱</text>
       <text class="page-subtitle">管理所有已加密存储的私密资料</text>

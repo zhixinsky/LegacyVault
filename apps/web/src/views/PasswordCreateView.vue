@@ -76,7 +76,7 @@ async function handleSave() {
       });
     } else {
       await createVaultItem({
-        type: 'email_account',
+        type: 'password',
         titleCiphertext: encrypted.titleCiphertext,
         encryptedPayload: encrypted.encryptedPayload,
       });

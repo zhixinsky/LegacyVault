@@ -88,16 +88,13 @@ async function loadItems() {
 
   try {
 
-    const [emailResult, serverResult] = await Promise.all([
-      listVaultItems('email_account'),
-      listVaultItems('server_account'),
-    ]);
+    const passwordResult = await listVaultItems('password');
 
     const rows: PasswordRow[] = [];
 
 
 
-    for (const item of [...emailResult.items, ...serverResult.items]) {
+    for (const item of passwordResult.items) {
 
       rows.push(await parseItem(item));
 

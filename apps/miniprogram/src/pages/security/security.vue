@@ -243,7 +243,7 @@ function copyMfaText(text: string, title: string) {
 </script>
 
 <template>
-  <view class="container">
+  <view class="container tabbar-page">
     <view class="card">
       <text class="title">安全中心</text>
       <text class="subtitle">二次验证、恢复密钥、登录设备与审计记录</text>

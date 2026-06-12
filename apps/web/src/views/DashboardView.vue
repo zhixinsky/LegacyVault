@@ -17,9 +17,8 @@ const stats = ref({
 
 onMounted(async () => {
   try {
-    const [emailAccounts, serverAccounts, notes, files, ...accountResults] = await Promise.all([
-      listVaultItems('email_account'),
-      listVaultItems('server_account'),
+    const [passwords, notes, files, ...accountResults] = await Promise.all([
+      listVaultItems('password'),
       listVaultItems('note'),
       listFiles(),
       ...MANAGED_VAULT_TYPES.map((type) => listVaultItems(type)),
@@ -28,13 +27,12 @@ onMounted(async () => {
     const accountTotal = accountResults.reduce((sum, result) => sum + result.total, 0);
     const recent: Array<{ id: string; title: string }> = [];
 
-    const passwordItems = [...emailAccounts.items, ...serverAccounts.items];
-    for (const item of passwordItems.slice(0, 5)) {
+    for (const item of passwords.items.slice(0, 5)) {
       recent.push({ id: item.id, title: await decodeTitle(item) });
     }
 
     stats.value = {
-      passwords: emailAccounts.total + serverAccounts.total,
+      passwords: passwords.total,
       notes: notes.total,
       accounts: accountTotal,
       files: files.total,

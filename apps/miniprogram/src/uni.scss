@@ -8,6 +8,11 @@ page {
   padding: 32rpx;
 }
 
+.tabbar-page {
+  padding-bottom: calc(176rpx + env(safe-area-inset-bottom));
+  box-sizing: border-box;
+}
+
 .card {
   background: #fff;
   border-radius: 20rpx;

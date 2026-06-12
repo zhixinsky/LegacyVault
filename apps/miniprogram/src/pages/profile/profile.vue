@@ -182,7 +182,7 @@ function goSecurity() {
 </script>
 
 <template>
-  <view class="container">
+  <view class="container tabbar-page">
     <view class="card">
       <text class="title">账号与身份认证</text>
       <text class="subtitle">绑定可信身份，用于快捷登录、安全通知与找回验证</text>

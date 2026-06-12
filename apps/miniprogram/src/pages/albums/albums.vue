@@ -140,7 +140,7 @@ function renameAlbum(album: { id: string; name: string }) {
 </script>
 
 <template>
-  <view class="container">
+  <view class="container tabbar-page">
     <view class="card">
       <text class="title">私密相册</text>
       <text class="subtitle">相册名称与图片均在本地加密</text>
