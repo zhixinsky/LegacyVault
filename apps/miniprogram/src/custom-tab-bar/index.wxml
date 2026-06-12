@@ -1,0 +1,14 @@
+<cover-view class="vp-tabbar-shell">
+  <cover-view class="vp-tabbar-glass">
+    <cover-view
+      wx:for="{{tabs}}"
+      wx:key="pagePath"
+      data-index="{{index}}"
+      class="vp-tabbar-item {{currentPath === item.pagePath ? 'active' : ''}}"
+      bindtap="switchTab"
+    >
+      <cover-view class="vp-tabbar-icon">{{item.icon}}</cover-view>
+      <cover-view class="vp-tabbar-text">{{item.text}}</cover-view>
+    </cover-view>
+  </cover-view>
+</cover-view>

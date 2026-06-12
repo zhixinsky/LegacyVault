@@ -71,6 +71,46 @@ function buildHeaders(token: string, options: RequestOptions): RequestHeader {
   };
 }
 
+function isGetRequest(options: RequestOptions) {
+  return (options.method ?? 'GET') === 'GET';
+}
+
+function appendQuery(url: string, data: RequestOptions['data']) {
+  if (!data || typeof data !== 'object' || Array.isArray(data)) {
+    return url;
+  }
+
+  const [path, query = ''] = url.split('?');
+  const params = new Map<string, string>();
+  query
+    .split('&')
+    .filter(Boolean)
+    .forEach((pair) => {
+      const [key, value = ''] = pair.split('=');
+      if (key) {
+        params.set(decodeURIComponent(key), decodeURIComponent(value));
+      }
+    });
+
+  Object.entries(data as Record<string, unknown>).forEach(([key, value]) => {
+    if (value === undefined || value === null || value === '') return;
+    params.set(key, String(value));
+  });
+
+  const queryString = Array.from(params.entries())
+    .map(([key, value]) => `${encodeURIComponent(key)}=${encodeURIComponent(value)}`)
+    .join('&');
+  return queryString ? `${path}?${queryString}` : path;
+}
+
+function buildRequestUrl(options: RequestOptions) {
+  return isGetRequest(options) ? appendQuery(options.url, options.data) : options.url;
+}
+
+function buildRequestData(options: RequestOptions) {
+  return isGetRequest(options) ? undefined : options.data;
+}
+
 function extractErrorMessage(data: unknown, fallback: string) {
   if (!data || typeof data !== 'object') {
     return fallback;
@@ -117,11 +157,12 @@ function callCloudContainer<T>(options: RequestOptions, token: string): Promise<
   }
 
   return new Promise((resolve, reject) => {
+    const requestUrl = buildRequestUrl(options);
     cloud.callContainer({
       config: { env: WX_CLOUD_ENV_ID },
-      path: `/api/v1${options.url}`,
+      path: `/api/v1${requestUrl}`,
       method: options.method ?? 'GET',
-      data: options.data,
+      data: buildRequestData(options),
       header: {
         ...buildHeaders(token, options),
         'X-WX-SERVICE': WX_CLOUD_SERVICE,
@@ -146,10 +187,11 @@ export async function request<T>(options: RequestOptions): Promise<T> {
   }
 
   return new Promise((resolve, reject) => {
+    const requestUrl = buildRequestUrl(options);
     uni.request({
-      url: `${API_BASE_URL}${options.url}`,
+      url: `${API_BASE_URL}${requestUrl}`,
       method: (options.method ?? 'GET') as UniApp.RequestOptions['method'],
-      data: options.data as UniApp.RequestOptions['data'],
+      data: buildRequestData(options) as UniApp.RequestOptions['data'],
       header: buildHeaders(token, options),
       success: (res) => {
         try {

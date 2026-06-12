@@ -19,6 +19,12 @@ const loading = ref(false);
 const heroBackgroundUrl =
   'cloud://prod-d4g8kpg7x92d55205.7072-prod-d4g8kpg7x92d55205-1441616383/img/bg.webp';
 
+function waitForLoadingPaint() {
+  return new Promise<void>((resolve) => {
+    setTimeout(resolve, 80);
+  });
+}
+
 onLoad(async () => {
   try {
     const profile = await getProfile();
@@ -56,7 +62,13 @@ async function handleUnlock() {
   }
 
   loading.value = true;
+  uni.showLoading({
+    title: unlockMode.value === 'master' ? '正在解锁...' : '正在恢复...',
+    mask: true,
+  });
   try {
+    await waitForLoadingPaint();
+
     if (unlockMode.value === 'master') {
       await unlockVaultWithMasterPassword(masterPassword.value);
     } else {
@@ -76,7 +88,7 @@ async function handleUnlock() {
     recoveryKey.value = '';
     newMasterPassword.value = '';
     confirmMasterPassword.value = '';
-    await heartbeat().catch(() => undefined);
+    void heartbeat().catch(() => undefined);
     uni.switchTab({ url: '/pages/vault/vault' });
   } catch (error) {
     uni.showToast({
@@ -84,6 +96,7 @@ async function handleUnlock() {
       icon: 'none',
     });
   } finally {
+    uni.hideLoading();
     loading.value = false;
   }
 }
@@ -159,7 +172,7 @@ function goLogin() {
         <text>平台无法查看或恢复您的保险箱内容。日常解锁请使用主密码；恢复密钥仅用于忘记主密码时重置主密码。</text>
       </view>
 
-      <button class="primary-button" :loading="loading" @tap="handleUnlock">
+      <button class="primary-button" :disabled="loading" :loading="loading" @tap="handleUnlock">
         {{ unlockMode === 'master' ? '解锁并进入保险箱' : '重置主密码并进入' }}
       </button>
       <button class="ghost-button" @tap="goLogin">切换账号</button>
