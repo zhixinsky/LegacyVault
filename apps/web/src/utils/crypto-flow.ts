@@ -84,7 +84,7 @@ export async function unlockVaultWithMasterPassword(masterPassword: string) {
   return vaultKey;
 }
 
-export async function encryptVaultItemPayload(payload: Record<string, string>, title: string) {
+export async function encryptVaultItemPayload(payload: object, title: string) {
   const vaultKey = vaultSession.requireVaultKey();
   return {
     titleCiphertext: await encryptJson({ title }, vaultKey),
@@ -98,7 +98,7 @@ export async function decryptVaultTitle(titleCiphertext: string) {
   return data.title;
 }
 
-export async function decryptVaultPayload<T extends Record<string, string>>(encryptedPayload: string) {
+export async function decryptVaultPayload<T extends object>(encryptedPayload: string) {
   const vaultKey = vaultSession.requireVaultKey();
   return decryptJson<T>(encryptedPayload, vaultKey);
 }

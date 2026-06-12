@@ -2,6 +2,8 @@
 import { onShow } from '@dcloudio/uni-app';
 import { ref } from 'vue';
 import { decryptText } from '@/utils/api';
+import { decryptVaultPayload } from '@/utils/crypto-flow';
+import { richNoteToPlainText, type RichNotePayload } from '@/utils/rich-note';
 import { deleteVaultItem, listVaultItems } from '@/utils/services';
 
 const notes = ref<Array<{ id: string; title: string; content: string }>>([]);
@@ -16,13 +18,8 @@ async function loadNotes() {
     const rows = [];
     for (const item of result.items) {
       const title = await decryptText(item.titleCiphertext);
-      const { decryptJson } = await import('@vaultpass/crypto');
-      const { vaultSession } = await import('@/utils/api');
-      const payload = await decryptJson<{ content?: string }>(
-        item.encryptedPayload,
-        vaultSession.requireVaultKey(),
-      );
-      rows.push({ id: item.id, title, content: payload.content ?? '' });
+      const payload = await decryptVaultPayload<RichNotePayload>(item.encryptedPayload);
+      rows.push({ id: item.id, title, content: richNoteToPlainText(payload) });
     }
     notes.value = rows;
   } catch (error) {

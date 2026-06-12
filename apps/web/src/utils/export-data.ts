@@ -1,6 +1,7 @@
 import { MANAGED_VAULT_TYPES } from '@vaultpass/types';
 import { decryptText } from '@/utils/api';
 import { decryptVaultPayload, decryptVaultTitle } from '@/utils/crypto-flow';
+import { normalizeRichNotePayload, type RichNotePayload } from '@/utils/rich-note';
 import {
   getInheritanceRule,
   listAlbums,
@@ -51,11 +52,13 @@ export async function buildVaultExportData() {
 
   const decryptedNotes = [];
   for (const item of notes.items) {
-    const payload = await decryptVaultPayload<{ content?: string }>(item.encryptedPayload);
+    const payload = await decryptVaultPayload<RichNotePayload>(item.encryptedPayload);
+    const note = normalizeRichNotePayload(payload);
     decryptedNotes.push({
       id: item.id,
       title: await decryptVaultTitle(item.titleCiphertext),
-      content: payload.content ?? '',
+      content: note.content,
+      doc: payload.doc,
       updatedAt: item.updatedAt,
     });
   }
@@ -75,7 +78,8 @@ export async function buildVaultExportData() {
     exportedAt: new Date().toISOString(),
     passwords: decryptedPasswords,
     accounts,
-    notes: decryptedNotes,    albums: albums.items.map((album) => ({
+    notes: decryptedNotes,
+    albums: albums.items.map((album) => ({
       id: album.id,
       encryptedName: album.encryptedName,
       fileCount: album._count?.files ?? 0,
