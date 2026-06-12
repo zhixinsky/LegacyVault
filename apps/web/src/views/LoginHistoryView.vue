@@ -54,35 +54,37 @@ onMounted(async () => {
       <div v-if="loading" class="p-8 text-center text-slate-400">加载中...</div>
       <div v-else-if="error" class="p-8 text-center text-red-600">{{ error }}</div>
       <div v-else-if="logs.length === 0" class="p-8 text-center text-slate-400">暂无登录记录</div>
-      <table v-else class="min-w-full text-sm">
-        <thead class="bg-slate-50 text-left text-slate-500">
-          <tr>
-            <th class="px-6 py-3">事件</th>
-            <th class="px-6 py-3">IP</th>
-            <th class="px-6 py-3">设备</th>
-            <th class="px-6 py-3">风险</th>
-            <th class="px-6 py-3">时间</th>
-          </tr>
-        </thead>
-        <tbody class="divide-y divide-slate-100">
-          <tr v-for="log in logs" :key="log.id" :class="{ 'bg-amber-50/60': log.alert }">
-            <td class="px-6 py-4 font-medium">{{ log.actionLabel }}</td>
-            <td class="px-6 py-4 font-mono text-xs">{{ log.ip ?? '—' }}</td>
-            <td class="max-w-xs truncate px-6 py-4 text-xs text-slate-600" :title="log.device">
-              {{ log.device ?? '—' }}
-            </td>
-            <td class="px-6 py-4">
-              <span
-                class="rounded-full px-2 py-1 text-xs"
-                :class="log.alert ? 'bg-amber-100 text-amber-800' : 'bg-slate-100 text-slate-600'"
-              >
-                {{ log.riskLevel }}
-              </span>
-            </td>
-            <td class="px-6 py-4">{{ log.time }}</td>
-          </tr>
-        </tbody>
-      </table>
+      <div v-else class="max-h-[min(68vh,720px)] overflow-auto">
+        <table class="min-w-full text-sm">
+          <thead class="sticky top-0 z-10 bg-slate-50 text-left text-slate-500">
+            <tr>
+              <th class="px-6 py-3">事件</th>
+              <th class="px-6 py-3">IP</th>
+              <th class="px-6 py-3">设备</th>
+              <th class="px-6 py-3">风险</th>
+              <th class="px-6 py-3">时间</th>
+            </tr>
+          </thead>
+          <tbody class="divide-y divide-slate-100">
+            <tr v-for="log in logs" :key="log.id" :class="{ 'bg-amber-50/60': log.alert }">
+              <td class="px-6 py-4 font-medium">{{ log.actionLabel }}</td>
+              <td class="px-6 py-4 font-mono text-xs">{{ log.ip ?? '—' }}</td>
+              <td class="max-w-xs truncate px-6 py-4 text-xs text-slate-600" :title="log.device">
+                {{ log.device ?? '—' }}
+              </td>
+              <td class="px-6 py-4">
+                <span
+                  class="rounded-full px-2 py-1 text-xs"
+                  :class="log.alert ? 'bg-amber-100 text-amber-800' : 'bg-slate-100 text-slate-600'"
+                >
+                  {{ log.riskLevel }}
+                </span>
+              </td>
+              <td class="px-6 py-4">{{ log.time }}</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
     </div>
   </div>
 </template>

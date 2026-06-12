@@ -367,7 +367,7 @@ async function handleRevokeDevice(id: string) {
 
 <template>
 
-  <div class="mx-auto max-w-2xl space-y-6">
+  <div class="grid w-full gap-6 lg:grid-cols-2 2xl:grid-cols-3">
 
     <section class="rounded-xl bg-white p-8 ring-1 ring-slate-200">
 
@@ -535,9 +535,9 @@ async function handleRevokeDevice(id: string) {
 
 
 
-    <p v-if="message" class="text-sm text-emerald-600">{{ message }}</p>
+    <p v-if="message" class="text-sm text-emerald-600 lg:col-span-2 2xl:col-span-3">{{ message }}</p>
 
-    <p v-if="error" class="text-sm text-red-600">{{ error }}</p>
+    <p v-if="error" class="text-sm text-red-600 lg:col-span-2 2xl:col-span-3">{{ error }}</p>
 
   </div>
 
