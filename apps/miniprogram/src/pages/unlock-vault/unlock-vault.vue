@@ -104,18 +104,6 @@ function goLogin() {
     </view>
 
     <view class="card">
-      <view class="mode-tabs">
-        <button class="tab" :class="{ active: unlockMode === 'master' }" @tap="unlockMode = 'master'">主密码</button>
-        <button
-          class="tab"
-          :class="{ active: unlockMode === 'recovery' }"
-          :disabled="!recoveryConfigured"
-          @tap="unlockMode = 'recovery'"
-        >
-          忘记主密码
-        </button>
-      </view>
-
       <template v-if="unlockMode === 'master'">
         <text class="field-label">主密码</text>
         <input
@@ -125,9 +113,19 @@ function goLogin() {
           placeholder="请输入主密码"
           placeholder-class="placeholder"
         />
+        <view class="forgot-row">
+          <button
+            class="forgot-link"
+            :disabled="!recoveryConfigured"
+            @tap="unlockMode = 'recovery'"
+          >
+            忘记主密码？
+          </button>
+        </view>
       </template>
 
       <template v-else>
+        <button class="back-link" @tap="unlockMode = 'master'">返回主密码解锁</button>
         <view class="recovery-tip">
           <text>恢复密钥只用于找回访问权限。验证成功后必须设置新的主密码，之后仍使用主密码解锁保险箱。</text>
         </view>
@@ -225,38 +223,37 @@ button::after { border: none; }
   box-shadow: 0 18rpx 56rpx rgba(11, 31, 77, 0.1);
 }
 
-.mode-tabs {
-  display: grid;
-  grid-template-columns: repeat(2, 1fr);
-  gap: 14rpx;
-  padding: 8rpx;
-  border-radius: 22rpx;
-  background: #f3f7ff;
-}
-
-.tab {
-  height: 70rpx;
-  padding: 0;
-  border-radius: 18rpx;
-  background: transparent;
-  color: #6b7280;
-  font-size: 25rpx;
-  line-height: 70rpx;
-}
-
-.tab.active {
-  background: #fff;
-  color: #1667ff;
-  font-weight: 800;
-  box-shadow: 0 8rpx 18rpx rgba(22, 119, 255, 0.1);
-}
-
 .field-label {
   display: block;
   margin: 34rpx 0 16rpx;
   color: #0b1f4d;
   font-size: 29rpx;
   font-weight: 900;
+}
+
+.forgot-row {
+  display: flex;
+  justify-content: flex-end;
+  margin-top: 18rpx;
+}
+
+.forgot-link,
+.back-link {
+  padding: 0;
+  border-radius: 0;
+  background: transparent;
+  color: #1667ff;
+  font-size: 25rpx;
+  font-weight: 800;
+  line-height: 1.4;
+}
+
+.forgot-link[disabled] {
+  color: #a7b1c2;
+}
+
+.back-link {
+  margin-top: 12rpx;
 }
 
 .recovery-tip {

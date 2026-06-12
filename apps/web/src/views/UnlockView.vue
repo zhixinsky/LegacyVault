@@ -128,38 +128,40 @@ async function handleUnlock() {
       <h1 class="text-2xl font-bold text-slate-900">解锁保险箱</h1>
       <p class="mt-2 text-sm text-slate-500">密钥仅在本地使用，不会发送到服务器</p>
 
-      <div class="mt-6 flex gap-2 rounded-2xl bg-blue-50 p-1.5">
-        <button
-          type="button"
-          class="flex-1 rounded-xl px-4 py-2.5 text-sm font-semibold transition"
-          :class="mode === 'master' ? 'bg-white text-blue-700 shadow-sm ring-1 ring-blue-100' : 'bg-blue-100/70 text-slate-600 hover:bg-blue-100'"
-          @click="mode = 'master'"
-        >
-          主密码
-        </button>
-        <button
-          type="button"
-          class="flex-1 rounded-xl px-4 py-2.5 text-sm font-semibold transition disabled:opacity-50"
-          :class="mode === 'recovery' ? 'bg-white text-blue-700 shadow-sm ring-1 ring-blue-100' : 'bg-blue-100/70 text-slate-600 hover:bg-blue-100'"
-          :disabled="!recoveryConfigured"
-          @click="mode = 'recovery'"
-        >
-          忘记主密码
-        </button>
-      </div>
-
-      <template v-if="mode === 'master'">
-        <label class="mt-6 block text-sm font-medium text-slate-700">主密码</label>
-        <input
-          v-model="masterPassword"
-          type="password"
-          class="mt-2 w-full rounded-lg border border-slate-300 px-3 py-2 outline-none focus:border-blue-500"
-          placeholder="请输入主密码"
-          @keyup.enter="handleUnlock"
-        />
-      </template>
-
+      <template v-if="mode === 'master'">
+
+        <label class="mt-6 block text-sm font-medium text-slate-700">主密码</label>
+
+        <input
+          v-model="masterPassword"
+          type="password"
+          class="mt-2 w-full rounded-lg border border-slate-300 px-3 py-2 outline-none focus:border-blue-500"
+          placeholder="请输入主密码"
+          @keyup.enter="handleUnlock"
+        />
+
+        <div class="mt-3 text-right">
+          <button
+            type="button"
+            class="text-sm font-semibold text-blue-600 hover:text-blue-700 disabled:cursor-not-allowed disabled:text-slate-400"
+            :disabled="!recoveryConfigured"
+            @click="mode = 'recovery'"
+          >
+            忘记主密码？
+          </button>
+        </div>
+
+      </template>
+
       <template v-else>
+
+        <button
+          type="button"
+          class="mt-5 text-sm font-semibold text-blue-600 hover:text-blue-700"
+          @click="mode = 'master'"
+        >
+          返回主密码解锁
+        </button>
 
         <div class="mt-4 rounded-xl bg-amber-50 p-3 text-sm text-amber-800">
           恢复密钥只用于找回访问权限。验证成功后必须设置新的主密码，之后仍使用主密码解锁保险箱。
@@ -195,8 +197,9 @@ async function handleUnlock() {
           @keyup.enter="handleUnlock"
         />
 
-      </template>
-
+      </template>
+
+
       <p v-if="error" class="mt-3 text-sm text-red-600">{{ error }}</p>
 
       <VButton class="mt-6 !w-full" variant="primary" :disabled="loading" @click="handleUnlock">
