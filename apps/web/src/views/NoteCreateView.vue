@@ -29,7 +29,6 @@ import {
   createRichNotePayload,
   isRichNoteEmpty,
   normalizeRichNotePayload,
-  richNoteDocToPlainText,
   type RichNoteNode,
   type RichNotePayload,
 } from '@/utils/rich-note';
@@ -47,14 +46,17 @@ const saving = ref(false);
 const error = ref('');
 const saveStatus = ref<'idle' | 'dirty' | 'saving' | 'saved' | 'failed'>('idle');
 const lastSavedAt = ref('');
+const mode = ref<'read' | 'edit'>(routeId.value ? 'read' : 'edit');
 const imageInput = ref<HTMLInputElement | null>(null);
 const videoInput = ref<HTMLInputElement | null>(null);
 const attachmentInput = ref<HTMLInputElement | null>(null);
+const editorShell = ref<HTMLElement | null>(null);
 const uploadingAsset = ref(false);
 const downloadingAssetId = ref('');
 const mfaEnabled = ref(false);
 const mfaCode = ref('');
 const insertMenuOpen = ref(false);
+const insertMenuPosition = ref({ left: 24, top: 24 });
 const previewUrls = new Map<string, string>();
 let autoSaveTimer: number | undefined;
 let suppressUpdate = false;
@@ -90,9 +92,10 @@ const editor = useEditor({
     attributes: {
       class: 'rich-note-editor',
     },
-    handleKeyDown: (_view, event) => {
+    handleKeyDown: (view, event) => {
       if (event.key === '/') {
-        insertMenuOpen.value = true;
+        openInsertMenuAtSelection(view.state.selection.from);
+        return true;
       }
       return false;
     },
@@ -102,6 +105,8 @@ const editor = useEditor({
     markDirty();
   },
 });
+
+editor.value?.setEditable(mode.value === 'edit');
 
 onMounted(async () => {
   void loadMfaState();
@@ -113,6 +118,7 @@ onMounted(async () => {
     const payload = await decryptVaultPayload<RichNotePayload>(item.encryptedPayload);
     const normalized = normalizeRichNotePayload(payload);
     setEditorContent(await hydrateEncryptedMedia(normalized.doc));
+    editor.value?.setEditable(mode.value === 'edit');
     lastSavedAt.value = item.updatedAt;
     saveStatus.value = 'saved';
   } catch (err) {
@@ -129,6 +135,7 @@ onBeforeUnmount(() => {
 });
 
 const statusText = computed(() => {
+  if (mode.value === 'read') return '读取模式';
   if (saveStatus.value === 'saving') return '保存中';
   if (saveStatus.value === 'saved') return lastSavedAt.value ? `已保存 ${formatTime(lastSavedAt.value)}` : '已保存';
   if (saveStatus.value === 'failed') return '保存失败';
@@ -137,10 +144,11 @@ const statusText = computed(() => {
 });
 
 const canSave = computed(() => {
-  return Boolean(title.value.trim()) && !isRichNoteEmpty(getEditorDoc(), getPlainText());
+  return mode.value === 'edit' && Boolean(title.value.trim()) && !isRichNoteEmpty(getEditorDoc(), getPlainText());
 });
 
 function markDirty() {
+  if (mode.value !== 'edit') return;
   saveStatus.value = 'dirty';
   error.value = '';
   if (!itemId.value) return;
@@ -165,6 +173,7 @@ function getPlainText() {
 }
 
 async function handleSave(options: { silent?: boolean } = {}) {
+  if (mode.value !== 'edit') return;
   if (!title.value.trim()) {
     if (!options.silent) error.value = '请填写标题';
     return;
@@ -229,7 +238,7 @@ async function handleImageUpload(event: Event) {
   uploadingAsset.value = true;
   error.value = '';
   try {
-    const prepared = await prepareEncryptedUpload(file, 'note_image', undefined, {
+    const prepared = await prepareEncryptedUpload(file, 'image', undefined, {
       displayName: file.name,
       tags: '私密笔记',
     });
@@ -256,7 +265,7 @@ async function handleAttachmentUpload(event: Event) {
   uploadingAsset.value = true;
   error.value = '';
   try {
-    const prepared = await prepareEncryptedUpload(file, 'note_attachment', undefined, {
+    const prepared = await prepareEncryptedUpload(file, 'document', undefined, {
       displayName: file.name,
       tags: '私密笔记',
     });
@@ -281,7 +290,7 @@ async function handleVideoUpload(event: Event) {
   uploadingAsset.value = true;
   error.value = '';
   try {
-    const prepared = await prepareEncryptedUpload(file, 'note_video', undefined, {
+    const prepared = await prepareEncryptedUpload(file, 'video', undefined, {
       displayName: file.name,
       tags: '私密笔记',
     });
@@ -415,14 +424,28 @@ function applyCodeLanguage() {
   editor.value?.chain().focus().setCodeBlock({ language: language.trim() }).run();
 }
 
+function openInsertMenuAtSelection(position?: number) {
+  if (mode.value !== 'edit') return;
+  const view = editor.value?.view;
+  const shell = editorShell.value;
+  if (!view || !shell) {
+    insertMenuOpen.value = true;
+    return;
+  }
+
+  const coords = view.coordsAtPos(position ?? view.state.selection.from);
+  const shellRect = shell.getBoundingClientRect();
+  insertMenuPosition.value = {
+    left: Math.max(12, Math.min(coords.left - shellRect.left, shellRect.width - 208)),
+    top: Math.max(12, coords.bottom - shellRect.top + 8),
+  };
+  insertMenuOpen.value = true;
+}
+
 function formatTime(value: string) {
   const date = new Date(value);
   if (Number.isNaN(date.getTime())) return '';
   return date.toLocaleTimeString('zh-CN', { hour: '2-digit', minute: '2-digit' });
-}
-
-function previewPlainText() {
-  return richNoteDocToPlainText(getEditorDoc());
 }
 
 async function reloadAssetPreviews() {
@@ -432,6 +455,7 @@ async function reloadAssetPreviews() {
 }
 
 function insertBlock(kind: 'paragraph' | 'heading' | 'table' | 'image' | 'video' | 'attachment' | 'code' | 'quote' | 'todo') {
+  if (mode.value !== 'edit') return;
   insertMenuOpen.value = false;
   if (kind === 'paragraph') editor.value?.chain().focus().setParagraph().run();
   if (kind === 'heading') editor.value?.chain().focus().toggleHeading({ level: 2 }).run();
@@ -442,6 +466,12 @@ function insertBlock(kind: 'paragraph' | 'heading' | 'table' | 'image' | 'video'
   if (kind === 'code') applyCodeLanguage();
   if (kind === 'quote') editor.value?.chain().focus().toggleBlockquote().run();
   if (kind === 'todo') editor.value?.chain().focus().toggleTaskList().run();
+}
+
+function setMode(nextMode: 'read' | 'edit') {
+  mode.value = nextMode;
+  insertMenuOpen.value = false;
+  editor.value?.setEditable(nextMode === 'edit');
 }
 </script>
 
@@ -454,6 +484,22 @@ function insertBlock(kind: 'paragraph' | 'heading' | 'table' | 'image' | 'video'
           <h2 class="mt-1 text-2xl font-bold text-slate-950">{{ isEdit ? '编辑私密笔记' : '新增私密笔记' }}</h2>
         </div>
         <div class="flex items-center gap-3">
+          <div class="rounded-full bg-slate-100 p-1">
+            <button
+              class="mode-pill"
+              :class="{ active: mode === 'read' }"
+              @click="setMode('read')"
+            >
+              读取
+            </button>
+            <button
+              class="mode-pill"
+              :class="{ active: mode === 'edit' }"
+              @click="setMode('edit')"
+            >
+              编辑
+            </button>
+          </div>
           <span
             class="rounded-full px-3 py-1 text-xs font-semibold"
             :class="saveStatus === 'failed' ? 'bg-red-50 text-red-600' : 'bg-blue-50 text-blue-700'"
@@ -461,7 +507,7 @@ function insertBlock(kind: 'paragraph' | 'heading' | 'table' | 'image' | 'video'
             {{ statusText }}
           </span>
           <VButton variant="secondary" @click="router.push('/app/notes')">返回列表</VButton>
-          <VButton variant="primary" :disabled="saving || !canSave" @click="handleSave()">
+          <VButton v-if="mode === 'edit'" variant="primary" :disabled="saving || !canSave" @click="handleSave()">
             {{ saving ? '加密保存中...' : '加密保存' }}
           </VButton>
         </div>
@@ -475,57 +521,43 @@ function insertBlock(kind: 'paragraph' | 'heading' | 'table' | 'image' | 'video'
         <input
           v-model="title"
           class="w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-xl font-bold text-slate-950 outline-none transition focus:border-blue-300 focus:bg-white focus:ring-4 focus:ring-blue-100"
+          :readonly="mode === 'read'"
           placeholder="笔记标题"
           @input="markDirty"
         />
 
-        <div class="overflow-hidden rounded-2xl border border-slate-200 bg-white">
-          <div class="flex flex-wrap gap-2 border-b border-slate-100 bg-slate-50/90 p-3">
-            <div class="relative">
-              <button class="toolbar-btn" @click="insertMenuOpen = !insertMenuOpen">插入</button>
-              <div
-                v-if="insertMenuOpen"
-                class="absolute left-0 top-11 z-20 grid w-44 gap-1 rounded-2xl border border-slate-200 bg-white p-2 shadow-xl"
-              >
-                <button class="insert-menu-btn" @click="insertBlock('heading')">标题</button>
-                <button class="insert-menu-btn" @click="insertBlock('table')">表格</button>
-                <button class="insert-menu-btn" @click="insertBlock('image')">图片</button>
-                <button class="insert-menu-btn" @click="insertBlock('video')">视频</button>
-                <button class="insert-menu-btn" @click="insertBlock('attachment')">附件</button>
-                <button class="insert-menu-btn" @click="insertBlock('code')">代码块</button>
-                <button class="insert-menu-btn" @click="insertBlock('quote')">引用</button>
-                <button class="insert-menu-btn" @click="insertBlock('todo')">待办</button>
-              </div>
-            </div>
-            <button class="toolbar-btn" :class="{ active: editor?.isActive('heading', { level: 1 }) }" @click="editor?.chain().focus().toggleHeading({ level: 1 }).run()">H1</button>
-            <button class="toolbar-btn" :class="{ active: editor?.isActive('heading', { level: 2 }) }" @click="editor?.chain().focus().toggleHeading({ level: 2 }).run()">H2</button>
-            <button class="toolbar-btn" :class="{ active: editor?.isActive('bold') }" @click="editor?.chain().focus().toggleBold().run()">B</button>
-            <button class="toolbar-btn" :class="{ active: editor?.isActive('italic') }" @click="editor?.chain().focus().toggleItalic().run()">I</button>
-            <button class="toolbar-btn" :class="{ active: editor?.isActive('strike') }" @click="editor?.chain().focus().toggleStrike().run()">S</button>
-            <button class="toolbar-btn" :class="{ active: editor?.isActive('bulletList') }" @click="editor?.chain().focus().toggleBulletList().run()">无序</button>
-            <button class="toolbar-btn" :class="{ active: editor?.isActive('orderedList') }" @click="editor?.chain().focus().toggleOrderedList().run()">有序</button>
-            <button class="toolbar-btn" :class="{ active: editor?.isActive('taskList') }" @click="editor?.chain().focus().toggleTaskList().run()">待办</button>
-            <button class="toolbar-btn" :class="{ active: editor?.isActive('blockquote') }" @click="editor?.chain().focus().toggleBlockquote().run()">引用</button>
-            <button class="toolbar-btn" :class="{ active: editor?.isActive('codeBlock') }" @click="applyCodeLanguage">代码</button>
-            <button class="toolbar-btn" @click="editor?.chain().focus().setHorizontalRule().run()">分割线</button>
-            <button class="toolbar-btn" :class="{ active: editor?.isActive('link') }" @click="applyLink">链接</button>
-            <button class="toolbar-btn" @click="editor?.chain().focus().insertTable({ rows: 3, cols: 3, withHeaderRow: true }).run()">表格</button>
-            <button v-if="editor?.isActive('table')" class="toolbar-btn" @click="editor?.chain().focus().addColumnAfter().run()">加列</button>
-            <button v-if="editor?.isActive('table')" class="toolbar-btn" @click="editor?.chain().focus().addRowAfter().run()">加行</button>
-            <button v-if="editor?.isActive('table')" class="toolbar-btn" @click="editor?.chain().focus().deleteColumn().run()">删列</button>
-            <button v-if="editor?.isActive('table')" class="toolbar-btn" @click="editor?.chain().focus().deleteRow().run()">删行</button>
-            <button v-if="editor?.isActive('table')" class="toolbar-btn" @click="editor?.chain().focus().deleteTable().run()">删表</button>
-            <button class="toolbar-btn" :disabled="uploadingAsset" @click="imageInput?.click()">
-              {{ uploadingAsset ? '上传中' : '图片' }}
-            </button>
-            <button class="toolbar-btn" :disabled="uploadingAsset" @click="videoInput?.click()">
-              {{ uploadingAsset ? '上传中' : '视频' }}
-            </button>
-            <button class="toolbar-btn" :disabled="uploadingAsset" @click="attachmentInput?.click()">
-              {{ uploadingAsset ? '上传中' : '附件' }}
-            </button>
-            <button class="toolbar-btn" @click="editor?.chain().focus().undo().run()">撤销</button>
-            <button class="toolbar-btn" @click="editor?.chain().focus().redo().run()">重做</button>
+        <div ref="editorShell" class="relative overflow-hidden rounded-2xl border border-slate-200 bg-white">
+          <button
+            v-if="mode === 'edit'"
+            class="absolute right-4 top-4 z-10 rounded-xl bg-blue-50 px-3 py-2 text-sm font-bold text-blue-700 hover:bg-blue-100"
+            @click="openInsertMenuAtSelection()"
+          >
+            插入
+          </button>
+          <div
+            v-if="insertMenuOpen"
+            class="insert-popover"
+            :style="{ left: `${insertMenuPosition.left}px`, top: `${insertMenuPosition.top}px` }"
+          >
+            <button class="insert-menu-btn" @click="insertBlock('heading')">标题</button>
+            <button class="insert-menu-btn" @click="editor?.chain().focus().toggleBold().run(); insertMenuOpen = false">加粗</button>
+            <button class="insert-menu-btn" @click="editor?.chain().focus().toggleItalic().run(); insertMenuOpen = false">斜体</button>
+            <button class="insert-menu-btn" @click="insertBlock('table')">表格</button>
+            <button v-if="editor?.isActive('table')" class="insert-menu-btn" @click="editor?.chain().focus().addColumnAfter().run(); insertMenuOpen = false">表格加列</button>
+            <button v-if="editor?.isActive('table')" class="insert-menu-btn" @click="editor?.chain().focus().addRowAfter().run(); insertMenuOpen = false">表格加行</button>
+            <button v-if="editor?.isActive('table')" class="insert-menu-btn" @click="editor?.chain().focus().deleteColumn().run(); insertMenuOpen = false">表格删列</button>
+            <button v-if="editor?.isActive('table')" class="insert-menu-btn" @click="editor?.chain().focus().deleteRow().run(); insertMenuOpen = false">表格删行</button>
+            <button v-if="editor?.isActive('table')" class="insert-menu-btn" @click="editor?.chain().focus().deleteTable().run(); insertMenuOpen = false">删除表格</button>
+            <button class="insert-menu-btn" @click="insertBlock('image')">图片</button>
+            <button class="insert-menu-btn" @click="insertBlock('video')">视频</button>
+            <button class="insert-menu-btn" @click="insertBlock('attachment')">附件</button>
+            <button class="insert-menu-btn" @click="insertBlock('code')">代码块</button>
+            <button class="insert-menu-btn" @click="insertBlock('quote')">引用</button>
+            <button class="insert-menu-btn" @click="insertBlock('todo')">待办</button>
+            <button class="insert-menu-btn" @click="applyLink(); insertMenuOpen = false">链接</button>
+            <button class="insert-menu-btn" @click="editor?.chain().focus().setHorizontalRule().run(); insertMenuOpen = false">分割线</button>
+            <button class="insert-menu-btn" @click="editor?.chain().focus().undo().run(); insertMenuOpen = false">撤销</button>
+            <button class="insert-menu-btn" @click="editor?.chain().focus().redo().run(); insertMenuOpen = false">重做</button>
           </div>
           <input ref="imageInput" type="file" accept="image/*" class="hidden" @change="handleImageUpload" />
           <input ref="videoInput" type="file" accept="video/*" class="hidden" @change="handleVideoUpload" />
@@ -547,10 +579,6 @@ function insertBlock(kind: 'paragraph' | 'heading' | 'table' | 'image' | 'video'
           </button>
         </div>
 
-        <div class="rounded-2xl bg-blue-50 px-4 py-3 text-sm leading-6 text-blue-800">
-          内容、图片和附件都会在本机加密后保存，服务器只接收密文。当前纯文本摘要：{{ previewPlainText() || '暂无内容' }}
-        </div>
-
         <p v-if="error" class="rounded-2xl bg-red-50 px-4 py-3 text-sm font-semibold text-red-600">{{ error }}</p>
       </div>
     </div>
@@ -558,28 +586,34 @@ function insertBlock(kind: 'paragraph' | 'heading' | 'table' | 'image' | 'video'
 </template>
 
 <style scoped>
-.toolbar-btn {
-  min-height: 36px;
-  border-radius: 12px;
-  background: #ffffff;
-  padding: 0 12px;
+.mode-pill {
+  min-width: 58px;
+  border-radius: 999px;
+  padding: 7px 14px;
   font-size: 13px;
-  font-weight: 700;
-  color: #475569;
-  box-shadow: inset 0 0 0 1px #e2e8f0;
-  transition: background 0.16s ease, color 0.16s ease, box-shadow 0.16s ease;
+  font-weight: 800;
+  color: #64748b;
 }
 
-.toolbar-btn:hover,
-.toolbar-btn.active {
+.mode-pill.active {
   background: #2563eb;
   color: #ffffff;
-  box-shadow: inset 0 0 0 1px #2563eb;
+  box-shadow: 0 8px 18px rgba(37, 99, 235, 0.25);
 }
 
-.toolbar-btn:disabled {
-  cursor: not-allowed;
-  opacity: 0.55;
+.insert-popover {
+  position: absolute;
+  z-index: 30;
+  display: grid;
+  width: 196px;
+  max-height: 360px;
+  gap: 4px;
+  overflow: auto;
+  border: 1px solid #dbeafe;
+  border-radius: 18px;
+  background: rgba(255, 255, 255, 0.98);
+  padding: 8px;
+  box-shadow: 0 18px 50px rgba(15, 23, 42, 0.18);
 }
 
 .insert-menu-btn {

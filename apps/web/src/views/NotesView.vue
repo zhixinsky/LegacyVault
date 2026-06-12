@@ -2,14 +2,12 @@
 import { onMounted, ref } from 'vue';
 import { useRouter } from 'vue-router';
 import { VButton } from '@vaultpass/ui';
-import { decryptVaultPayload, decryptVaultTitle } from '@/utils/crypto-flow';
+import { decryptVaultTitle } from '@/utils/crypto-flow';
 import { deleteVaultItem, listVaultItems, type VaultItem } from '@/utils/services';
-import { normalizeRichNotePayload, truncateRichNote, type RichNotePayload } from '@/utils/rich-note';
 
 interface NoteRow {
   id: string;
   title: string;
-  content: string;
 }
 
 const router = useRouter();
@@ -38,11 +36,9 @@ async function loadItems() {
 async function parseItem(item: VaultItem): Promise<NoteRow> {
   try {
     const title = await decryptVaultTitle(item.titleCiphertext);
-    const payload = await decryptVaultPayload<RichNotePayload>(item.encryptedPayload);
-    const note = normalizeRichNotePayload(payload);
-    return { id: item.id, title, content: truncateRichNote(note.content) };
+    return { id: item.id, title };
   } catch {
-    return { id: item.id, title: '解密失败', content: '' };
+    return { id: item.id, title: '解密失败' };
   }
 }
 
@@ -66,7 +62,6 @@ async function handleDelete(id: string) {
         <div class="flex items-start justify-between gap-4">
           <div class="min-w-0 flex-1">
             <p class="font-medium text-slate-900">{{ item.title }}</p>
-            <p class="mt-1 text-sm leading-6 text-slate-600">{{ item.content || '空笔记' }}</p>
           </div>
           <div class="shrink-0 space-x-3 text-sm">
             <button class="rounded-xl bg-slate-100 px-3 py-1.5 text-sm font-semibold text-slate-700 hover:bg-slate-200" @click="router.push(`/app/notes/${item.id}/edit`)">编辑</button>
