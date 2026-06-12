@@ -51,6 +51,7 @@ const imageInput = ref<HTMLInputElement | null>(null);
 const videoInput = ref<HTMLInputElement | null>(null);
 const attachmentInput = ref<HTMLInputElement | null>(null);
 const editorShell = ref<HTMLElement | null>(null);
+const editorScroll = ref<HTMLElement | null>(null);
 const uploadingAsset = ref(false);
 const downloadingAssetId = ref('');
 const mfaEnabled = ref(false);
@@ -447,7 +448,8 @@ function openInsertMenuAtSelection(position?: number) {
 function updateCodeLanguageControl() {
   const instance = editor.value;
   const shell = editorShell.value;
-  if (!instance || !shell || mode.value !== 'edit' || !instance.isActive('codeBlock')) {
+  const scrollArea = editorScroll.value;
+  if (!instance || !shell || !scrollArea || mode.value !== 'edit' || !instance.isActive('codeBlock')) {
     codeLanguageControl.value.visible = false;
     return;
   }
@@ -465,9 +467,16 @@ function updateCodeLanguageControl() {
   }
 
   const rect = codeBlock.getBoundingClientRect();
+  const scrollRect = scrollArea.getBoundingClientRect();
+  if (rect.bottom < scrollRect.top + 12 || rect.top > scrollRect.bottom - 12) {
+    codeLanguageControl.value.visible = false;
+    return;
+  }
+
+  const controlWidth = 170;
   codeLanguageControl.value = {
     visible: true,
-    left: Math.max(12, rect.right - shellRect.left - 170),
+    left: Math.max(12, Math.min(rect.right - shellRect.left - controlWidth, shellRect.width - controlWidth - 12)),
     top: Math.max(12, rect.top - shellRect.top + 10),
     language: String(instance.getAttributes('codeBlock').language ?? ''),
   };
@@ -512,20 +521,19 @@ function insertBlock(kind: 'paragraph' | 'heading' | 'table' | 'image' | 'video'
 function setMode(nextMode: 'read' | 'edit') {
   mode.value = nextMode;
   insertMenuOpen.value = false;
+  codeLanguageControl.value.visible = false;
   editor.value?.setEditable(nextMode === 'edit');
 }
 </script>
 
 <template>
-  <div class="mx-auto max-w-5xl">
+  <div class="w-full">
     <div class="rounded-3xl bg-white/95 p-6 shadow-sm ring-1 ring-slate-200">
       <div class="flex flex-wrap items-center justify-between gap-3">
         <div>
           <p class="text-sm font-semibold text-blue-600">私密笔记</p>
           <h2 class="mt-1 text-2xl font-bold text-slate-950">{{ isEdit ? '编辑私密笔记' : '新增私密笔记' }}</h2>
-        </div>
-        <div class="flex items-center gap-3">
-          <div class="rounded-full bg-slate-100 p-1">
+          <div class="mt-3 inline-flex rounded-full bg-slate-100 p-1">
             <button
               class="mode-pill"
               :class="{ active: mode === 'read' }"
@@ -541,6 +549,8 @@ function setMode(nextMode: 'read' | 'edit') {
               编辑
             </button>
           </div>
+        </div>
+        <div class="flex items-center gap-3">
           <span
             class="rounded-full px-3 py-1 text-xs font-semibold"
             :class="saveStatus === 'failed' ? 'bg-red-50 text-red-600' : 'bg-blue-50 text-blue-700'"
@@ -623,7 +633,7 @@ function setMode(nextMode: 'read' | 'edit') {
           <input ref="imageInput" type="file" accept="image/*" class="hidden" @change="handleImageUpload" />
           <input ref="videoInput" type="file" accept="video/*" class="hidden" @change="handleVideoUpload" />
           <input ref="attachmentInput" type="file" class="hidden" @change="handleAttachmentUpload" />
-          <div class="note-editor-scroll" @click="handleEditorClick">
+          <div ref="editorScroll" class="note-editor-scroll" @click="handleEditorClick" @scroll="updateCodeLanguageControl">
             <EditorContent :editor="editor" />
           </div>
         </div>
