@@ -58,6 +58,9 @@ COPY --from=build /app/apps/api/prisma ./apps/api/prisma
 COPY --from=build /app/apps/api/package.json ./apps/api/package.json
 COPY --from=build /app/apps/api/node_modules ./apps/api/node_modules
 
+RUN mkdir -p /app/apps/api/storage \
+ && chown -R vaultpass:vaultpass /app/apps/api/storage
+
 USER vaultpass
 WORKDIR /app/apps/api
 EXPOSE 80

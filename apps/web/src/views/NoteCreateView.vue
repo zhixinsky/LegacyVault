@@ -567,7 +567,7 @@ function setMode(nextMode: 'read' | 'edit') {
           @input="markDirty"
         />
 
-        <div ref="editorShell" class="relative overflow-visible rounded-2xl border border-slate-200 bg-white">
+        <div ref="editorShell" class="note-editor-shell">
           <button
             v-if="mode === 'edit'"
             class="absolute right-4 top-4 z-10 rounded-xl bg-blue-50 px-3 py-2 text-sm font-bold text-blue-700 hover:bg-blue-100"
@@ -623,7 +623,7 @@ function setMode(nextMode: 'read' | 'edit') {
           <input ref="imageInput" type="file" accept="image/*" class="hidden" @change="handleImageUpload" />
           <input ref="videoInput" type="file" accept="video/*" class="hidden" @change="handleVideoUpload" />
           <input ref="attachmentInput" type="file" class="hidden" @change="handleAttachmentUpload" />
-          <div @click="handleEditorClick">
+          <div class="note-editor-scroll" @click="handleEditorClick">
             <EditorContent :editor="editor" />
           </div>
         </div>
@@ -717,6 +717,24 @@ function setMode(nextMode: 'read' | 'edit') {
   font-size: 11px;
   font-weight: 800;
   outline: none;
+}
+
+.note-editor-shell {
+  position: relative;
+  width: 100%;
+  overflow: visible;
+  border: 1px solid #e2e8f0;
+  border-radius: 16px;
+  background: #ffffff;
+}
+
+.note-editor-scroll {
+  max-height: min(68vh, 760px);
+  min-height: 520px;
+  overflow-y: auto;
+  overflow-x: hidden;
+  border-radius: 16px;
+  scrollbar-gutter: stable;
 }
 
 :deep(.rich-note-editor) {
