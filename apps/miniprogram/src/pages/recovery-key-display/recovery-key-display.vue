@@ -28,9 +28,9 @@ function copyKey() {
 }
 
 function downloadTxt() {
-  const filePath = `${userDataPath}/LegacyVault-Recovery-Key.txt`;
+  const filePath = `${userDataPath}/VaultPass-Recovery-Key.txt`;
   const content = [
-    'LegacyVault 恢复密钥',
+    'VaultPass 恢复密钥',
     '',
     recoveryKey.value,
     '',

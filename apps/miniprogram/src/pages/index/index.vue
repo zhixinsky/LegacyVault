@@ -138,7 +138,7 @@ function go(url: string, tab = false) {
     <view class="brand-card">
       <view class="brand-top">
         <view>
-          <text class="brand-name">LegacyVault</text>
+          <text class="brand-name">VaultPass</text>
           <text class="brand-subtitle">安全存储 · 数字传承</text>
         </view>
         <view class="brand-mark">

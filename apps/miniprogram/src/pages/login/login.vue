@@ -3,8 +3,10 @@ import { ref } from 'vue';
 import { vaultSession } from '@/utils/api';
 import {
   isAuthResult,
+  isMfaRequired,
   loginWithEmailCode,
   loginWithCode,
+  loginMfa,
   loginWithPassword,
   persistAuthResult,
   register,
@@ -31,6 +33,10 @@ const countdown = ref(0);
 const emailCountdown = ref(0);
 const agreed = ref(false);
 const phoneFocused = ref(false);
+const pendingMfaId = ref('');
+const mfaCode = ref('');
+const mfaPromptOpen = ref(false);
+const mfaSubmitting = ref(false);
 const heroBackgroundUrl =
   'cloud://prod-d4g8kpg7x92d55205.7072-prod-d4g8kpg7x92d55205-1441616383/img/bg.webp';
 
@@ -100,16 +106,7 @@ async function goRegisterFromLogin(result?: Extract<AuthLoginResponse, { registe
   }
 }
 
-function handleLoginResult(result: AuthLoginResponse) {
-  if (!isAuthResult(result)) {
-    if ('mfaRequired' in result) {
-      uni.showToast({ title: '暂不支持小程序 MFA 登录', icon: 'none' });
-      return;
-    }
-    void goRegisterFromLogin(result);
-    return;
-  }
-
+function completeLogin(result: Extract<AuthLoginResponse, { accessToken: string }>) {
   persistAuthResult(result);
   if (result.user.phone) {
     vaultSession.setPendingPhone(result.user.phone);
@@ -119,6 +116,57 @@ function handleLoginResult(result: AuthLoginResponse) {
     return;
   }
   uni.navigateTo({ url: '/pages/unlock-vault/unlock-vault' });
+}
+
+function handleLoginResult(result: AuthLoginResponse) {
+  if (isMfaRequired(result)) {
+    pendingMfaId.value = result.pendingId;
+    mfaCode.value = '';
+    mfaPromptOpen.value = true;
+    uni.showToast({ title: '请输入二次验证码', icon: 'none' });
+    return;
+  }
+
+  if (!isAuthResult(result)) {
+    void goRegisterFromLogin(result);
+    return;
+  }
+
+  completeLogin(result);
+}
+
+function closeMfaPrompt() {
+  if (mfaSubmitting.value) return;
+  mfaPromptOpen.value = false;
+  pendingMfaId.value = '';
+  mfaCode.value = '';
+}
+
+async function confirmMfaLogin() {
+  if (!pendingMfaId.value) {
+    closeMfaPrompt();
+    return;
+  }
+  if (!/^\d{6}$/.test(mfaCode.value)) {
+    uni.showToast({ title: '请输入 6 位二次验证码', icon: 'none' });
+    return;
+  }
+
+  mfaSubmitting.value = true;
+  try {
+    const auth = await loginMfa(pendingMfaId.value, mfaCode.value);
+    mfaPromptOpen.value = false;
+    pendingMfaId.value = '';
+    mfaCode.value = '';
+    completeLogin(auth);
+  } catch (error) {
+    uni.showToast({
+      title: error instanceof Error ? error.message : '二次验证失败',
+      icon: 'none',
+    });
+  } finally {
+    mfaSubmitting.value = false;
+  }
 }
 
 async function handleSendCode() {
@@ -331,7 +379,7 @@ function handleHeroImageError(error: unknown) {
           <image class="inline-icon mini-shield" src="/static/icons/login/shield-solid.svg" mode="aspectFit" />
           <text>Welcome to</text>
         </view>
-        <text class="brand-title">LegacyVault</text>
+        <text class="brand-title">VaultPass</text>
         <text class="brand-subtitle">您的数字保险箱</text>
         <view class="security-line">
           <image class="inline-icon lock-icon" src="/static/icons/login/lock.svg" mode="aspectFit" />
@@ -510,7 +558,30 @@ function handleHeroImageError(error: unknown) {
       </view>
     </view>
 
-    <text class="copyright">© 2024 LegacyVault. 保留所有权利。</text>
+    <view v-if="mfaPromptOpen" class="mfa-mask">
+      <view class="mfa-dialog">
+        <text class="mfa-title">二次验证</text>
+        <text class="mfa-desc">此账号已启用二次验证，请输入验证器 App 中的 6 位动态验证码。</text>
+        <view class="input-wrap mfa-input-wrap">
+          <image class="field-icon" src="/static/icons/login/lock.svg" mode="aspectFit" />
+          <input
+            v-model="mfaCode"
+            class="field-input"
+            type="number"
+            maxlength="6"
+            placeholder="请输入 6 位验证码"
+            placeholder-class="placeholder"
+            :focus="mfaPromptOpen"
+          />
+        </view>
+        <view class="mfa-actions">
+          <button class="mfa-cancel" :disabled="mfaSubmitting" @tap="closeMfaPrompt">取消</button>
+          <button class="mfa-confirm" :loading="mfaSubmitting" @tap="confirmMfaLogin">验证并登录</button>
+        </view>
+      </view>
+    </view>
+
+    <text class="copyright">© 2024 VaultPass. 保留所有权利。</text>
   </view>
 </template>
 
@@ -915,6 +986,72 @@ button::after {
   font-size: 20rpx;
   color: #6b7280;
   line-height: 1.35;
+}
+
+.mfa-mask {
+  position: fixed;
+  inset: 0;
+  z-index: 20;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 48rpx;
+  background: rgba(11, 31, 77, 0.38);
+  box-sizing: border-box;
+}
+
+.mfa-dialog {
+  width: 100%;
+  padding: 40rpx 34rpx 32rpx;
+  border-radius: 34rpx;
+  background: #fff;
+  box-shadow: 0 24rpx 70rpx rgba(11, 31, 77, 0.22);
+  box-sizing: border-box;
+}
+
+.mfa-title {
+  display: block;
+  color: #0b1f4d;
+  font-size: 34rpx;
+  font-weight: 900;
+}
+
+.mfa-desc {
+  display: block;
+  margin-top: 14rpx;
+  color: #66758a;
+  font-size: 25rpx;
+  line-height: 1.55;
+}
+
+.mfa-input-wrap {
+  margin-top: 30rpx;
+}
+
+.mfa-actions {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 18rpx;
+  margin-top: 30rpx;
+}
+
+.mfa-cancel,
+.mfa-confirm {
+  height: 84rpx;
+  border-radius: 22rpx;
+  font-size: 26rpx;
+  font-weight: 800;
+  line-height: 84rpx;
+}
+
+.mfa-cancel {
+  color: #42526b;
+  background: #f1f5f9;
+}
+
+.mfa-confirm {
+  color: #fff;
+  background: linear-gradient(135deg, #1e4dff, #0066ff);
 }
 
 .copyright {
