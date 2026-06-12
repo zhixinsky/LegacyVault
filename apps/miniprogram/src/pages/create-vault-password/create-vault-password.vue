@@ -85,7 +85,7 @@ async function handleCreateVault() {
         <text class="hero-title blue">数字保险箱</text>
         <text class="hero-subtitle">主密码用于加密您的所有数据，只有您本人可以解锁和访问。</text>
         <view class="feature-row">
-          <text>端到端加密</text>
+          <text>零知识加密</text>
           <text>完全私密</text>
           <text>密码不会上传</text>
         </view>
@@ -164,7 +164,7 @@ async function handleCreateVault() {
 
     <view class="footer-note">
       <image src="/static/icons/login/lock.svg" mode="aspectFit" />
-      <text>端到端加密 · 只有您可以访问</text>
+      <text>零知识加密 · 只有您可以解锁</text>
     </view>
   </view>
 </template>

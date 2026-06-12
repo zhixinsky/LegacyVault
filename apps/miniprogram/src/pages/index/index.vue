@@ -34,7 +34,7 @@ const coreEntries = [
   },
   {
     title: '文件保险箱',
-    desc: '重要文件端到端加密',
+    desc: '重要文件本地加密',
     url: '/pages/upload-file/upload-file',
     tone: 'cyan',
     icon: 'file',
@@ -148,7 +148,7 @@ function go(url: string, tab = false) {
 
       <view class="vault-summary">
         <text class="summary-label">我的保险箱</text>
-        <text class="summary-title">已开启端到端加密</text>
+        <text class="summary-title">已开启零知识加密</text>
         <view class="summary-row">
           <text>已存储 {{ totalItems }} 项资料</text>
           <text>最近同步：{{ lastSyncText }}</text>

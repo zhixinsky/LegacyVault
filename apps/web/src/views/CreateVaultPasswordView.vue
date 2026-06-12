@@ -68,7 +68,7 @@ async function handleCreate() {
       <p class="mt-3 text-slate-500">主密码用于加密您的所有数据，只有您本人可以解锁和访问。</p>
 
       <div class="mt-6 grid grid-cols-3 gap-3 text-center text-sm font-medium text-blue-700">
-        <span class="rounded-full bg-blue-50 px-3 py-2">端到端加密</span>
+        <span class="rounded-full bg-blue-50 px-3 py-2">零知识加密</span>
         <span class="rounded-full bg-blue-50 px-3 py-2">完全私密</span>
         <span class="rounded-full bg-blue-50 px-3 py-2">密码不会上传</span>
       </div>

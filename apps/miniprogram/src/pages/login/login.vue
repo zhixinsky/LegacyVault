@@ -335,7 +335,7 @@ function handleHeroImageError(error: unknown) {
         <text class="brand-subtitle">您的数字保险箱</text>
         <view class="security-line">
           <image class="inline-icon lock-icon" src="/static/icons/login/lock.svg" mode="aspectFit" />
-          <text>端到端加密 · 只有您可以访问</text>
+          <text>零知识加密 · 只有您可以解锁</text>
         </view>
       </view>
     </view>
@@ -491,7 +491,7 @@ function handleHeroImageError(error: unknown) {
             <image class="point-icon" src="/static/icons/login/data-encryption.svg" mode="aspectFit" />
           </view>
           <text class="point-title">数据加密存储</text>
-          <text class="point-desc">银行级安全保障</text>
+          <text class="point-desc">零知识加密保护</text>
         </view>
         <view class="point">
           <view class="point-icon-wrap private">

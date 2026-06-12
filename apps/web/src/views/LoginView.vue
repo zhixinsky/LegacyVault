@@ -244,7 +244,7 @@ async function submitMfa() {
       <p class="eyebrow">Welcome to</p>
       <h1>LegacyVault</h1>
       <p class="subtitle">您的数字保险箱</p>
-      <p class="security-line">端到端加密 · 只有您可以访问</p>
+      <p class="security-line">零知识加密 · 只有您可以解锁</p>
     </div>
 
     <div class="login-card">
