@@ -124,7 +124,7 @@ async function handleUnlock() {
 
 <template>
   <div class="unlock-page px-4">
-    <div class="w-full max-w-md rounded-[28px] bg-white/90 p-8 shadow-[0_28px_80px_rgba(11,31,77,0.16)] ring-1 ring-white/80 backdrop-blur">
+    <div class="w-full max-w-md rounded-[28px] bg-white/70 p-8 shadow-[0_28px_80px_rgba(11,31,77,0.18)] ring-1 ring-white/60 backdrop-blur-[22px]">
       <h1 class="text-2xl font-bold text-slate-900">解锁保险箱</h1>
       <p class="mt-2 text-sm text-slate-500">密钥仅在本地使用，不会发送到服务器</p>
 
@@ -217,8 +217,8 @@ async function handleUnlock() {
   justify-content: center;
   overflow: hidden;
   background:
-    linear-gradient(135deg, rgba(247, 251, 255, 0.9), rgba(232, 245, 255, 0.86)),
-    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='1300' height='850' viewBox='0 0 1300 850'%3E%3Cdefs%3E%3CradialGradient id='g' cx='50%25' cy='45%25' r='50%25'%3E%3Cstop offset='0' stop-color='%2368a4ff' stop-opacity='.55'/%3E%3Cstop offset='.65' stop-color='%23d8ecff' stop-opacity='.25'/%3E%3Cstop offset='1' stop-color='%23ffffff' stop-opacity='0'/%3E%3C/radialGradient%3E%3ClinearGradient id='s' x1='0' x2='1' y1='0' y2='1'%3E%3Cstop stop-color='%23f5fbff'/%3E%3Cstop offset='1' stop-color='%23eaf5ff'/%3E%3C/linearGradient%3E%3C/defs%3E%3Crect width='1300' height='850' fill='url(%23s)'/%3E%3Ccircle cx='660' cy='390' r='360' fill='url(%23g)'/%3E%3Crect x='730' y='245' width='260' height='240' rx='48' fill='%231667ff' fill-opacity='.16' stroke='%232b74ff' stroke-width='7'/%3E%3Cpath d='M800 245v-44c0-72 44-125 98-125s98 53 98 125v44' fill='none' stroke='%231667ff' stroke-width='25' stroke-linecap='round' stroke-opacity='.45'/%3E%3Ccircle cx='860' cy='365' r='28' fill='%231667ff' fill-opacity='.55'/%3E%3Cpath d='M220 550c240-132 466-136 680-12' fill='none' stroke='%238dbdff' stroke-width='3' stroke-opacity='.4'/%3E%3Cpath d='M260 250c162-72 321-62 476 30' fill='none' stroke='%238bd5d1' stroke-width='3' stroke-opacity='.32'/%3E%3C/svg%3E");
+    linear-gradient(135deg, rgba(248, 251, 255, 0.42), rgba(231, 244, 255, 0.32)),
+    url("https://7072-prod-d4g8kpg7x92d55205-1441616383.tcb.qcloud.la/img/webbg.webp?sign=3e4f66ed95b9227bd9e1014fb49cd623&t=1781171997");
   background-size: cover;
   background-position: center;
 }

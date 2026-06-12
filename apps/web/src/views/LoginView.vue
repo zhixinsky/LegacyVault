@@ -362,11 +362,11 @@ async function submitMfa() {
 .login-card {
   width: 100%;
   padding: 32px;
-  border: 1px solid #e2e8f0;
+  border: 1px solid rgba(255, 255, 255, 0.62);
   border-radius: 24px;
-  background: rgba(255, 255, 255, 0.9);
-  backdrop-filter: blur(18px);
-  box-shadow: 0 24px 64px rgba(11, 31, 77, 0.12);
+  background: rgba(255, 255, 255, 0.72);
+  backdrop-filter: blur(22px) saturate(1.08);
+  box-shadow: 0 24px 64px rgba(11, 31, 77, 0.16);
 }
 
 .login-card h2 {
