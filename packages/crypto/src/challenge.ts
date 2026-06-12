@@ -1,8 +1,13 @@
 import { argon2id } from '@noble/hashes/argon2';
-import { utf8ToBytes } from '@noble/hashes/utils';
 import { AES_KEY_LENGTH, CHALLENGE_KDF_PARAMS } from './constants.js';
 import type { ChallengeAnswerHash } from './types.js';
-import { base64ToBytes, bytesToBase64, randomBytes, timingSafeEqual } from './utils/encoding.js';
+import {
+  base64ToBytes,
+  bytesToBase64,
+  randomBytes,
+  timingSafeEqual,
+  utf8ToBytes,
+} from './utils/encoding.js';
 
 /** 规范化验证问题答案（比较前统一处理，避免大小写/空格差异） */
 export function normalizeChallengeAnswer(answer: string): string {

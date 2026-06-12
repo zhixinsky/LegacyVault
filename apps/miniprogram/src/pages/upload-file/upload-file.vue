@@ -3,6 +3,7 @@
 import { onShow } from '@dcloudio/uni-app';
 
 import { ref } from 'vue';
+import { bytesToUtf8 } from '@vaultpass/crypto';
 
 import { downloadEncryptedFile } from '@/utils/api';
 
@@ -173,7 +174,7 @@ async function handleDownload(file: VaultFileItem) {
 
     const buffer = await downloadEncryptedFile(file.id, mfaCode.value || undefined);
 
-    const encryptedContent = new TextDecoder().decode(new Uint8Array(buffer));
+    const encryptedContent = bytesToUtf8(new Uint8Array(buffer));
 
     const decrypted = await decryptStoredFile(encryptedContent, file.encryptedFileKey, vaultKey);
 

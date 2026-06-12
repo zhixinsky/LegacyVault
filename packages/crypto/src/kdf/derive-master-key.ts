@@ -1,8 +1,7 @@
 import { argon2id } from '@noble/hashes/argon2';
-import { utf8ToBytes } from '@noble/hashes/utils';
 import { AES_KEY_LENGTH, DEFAULT_KDF_PARAMS } from '../constants.js';
 import type { DerivedMasterKey, KdfParams } from '../types.js';
-import { base64ToBytes, bytesToBase64, randomBytes } from '../utils/encoding.js';
+import { base64ToBytes, bytesToBase64, randomBytes, utf8ToBytes } from '../utils/encoding.js';
 
 /**
  * 从用户主密码派生 master_key。

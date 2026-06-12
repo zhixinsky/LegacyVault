@@ -7,6 +7,8 @@ import { vaultSession } from '@/utils/api';
 const route = useRoute();
 const router = useRouter();
 const headerQuery = ref('');
+const appLogoUrl =
+  'cloud://prod-d4g8kpg7x92d55205.7072-prod-d4g8kpg7x92d55205-1441616383/img/logo.webp';
 
 const navGroups = [
   {
@@ -76,9 +78,11 @@ function submitHeaderSearch() {
     <aside class="flex w-72 shrink-0 flex-col rounded-[24px] border border-white/70 bg-white/90 shadow-[0_18px_50px_rgba(15,23,42,0.08)] backdrop-blur">
       <div class="border-b border-slate-100 px-6 py-5">
         <div class="flex items-center gap-3">
-          <div class="flex h-11 w-11 items-center justify-center rounded-2xl bg-blue-600 text-sm font-bold text-white shadow-lg shadow-blue-200">
-            VP
-          </div>
+          <img
+            class="h-11 w-11 rounded-2xl object-cover shadow-lg shadow-blue-200"
+            :src="appLogoUrl"
+            alt="VaultPass"
+          />
           <div>
             <p class="font-semibold text-slate-900">VaultPass</p>
             <p class="text-xs text-slate-500">零知识保险箱</p>

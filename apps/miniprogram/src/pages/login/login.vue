@@ -498,7 +498,7 @@ function handleHeroImageError(error: unknown) {
             <image class="point-icon" src="/static/icons/login/private-control.svg" mode="aspectFit" />
           </view>
           <text class="point-title">完全私密控制</text>
-          <text class="point-desc">只有您可以访问</text>
+          <text class="point-desc">只有您可以解锁</text>
         </view>
         <view class="point">
           <view class="point-icon-wrap backup">

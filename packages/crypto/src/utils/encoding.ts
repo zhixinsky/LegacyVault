@@ -47,6 +47,83 @@ export function base64ToBytes(base64: string): Uint8Array {
   return Uint8Array.from(bytes);
 }
 
+/** 将字符串转为 UTF-8 字节，兼容没有 TextEncoder 的小程序运行时 */
+export function utf8ToBytes(value: string): Uint8Array {
+  const TextEncoderCtor = globalThis.TextEncoder;
+  if (TextEncoderCtor) {
+    return new TextEncoderCtor().encode(value);
+  }
+
+  const bytes: number[] = [];
+  for (let i = 0; i < value.length; i += 1) {
+    let codePoint = value.codePointAt(i)!;
+    if (codePoint > 0xffff) {
+      i += 1;
+    }
+
+    if (codePoint <= 0x7f) {
+      bytes.push(codePoint);
+    } else if (codePoint <= 0x7ff) {
+      bytes.push(0xc0 | (codePoint >> 6), 0x80 | (codePoint & 0x3f));
+    } else if (codePoint <= 0xffff) {
+      bytes.push(
+        0xe0 | (codePoint >> 12),
+        0x80 | ((codePoint >> 6) & 0x3f),
+        0x80 | (codePoint & 0x3f),
+      );
+    } else {
+      bytes.push(
+        0xf0 | (codePoint >> 18),
+        0x80 | ((codePoint >> 12) & 0x3f),
+        0x80 | ((codePoint >> 6) & 0x3f),
+        0x80 | (codePoint & 0x3f),
+      );
+    }
+  }
+
+  return Uint8Array.from(bytes);
+}
+
+/** 将 UTF-8 字节转为字符串，兼容没有 TextDecoder 的小程序运行时 */
+export function bytesToUtf8(bytes: Uint8Array): string {
+  const TextDecoderCtor = globalThis.TextDecoder;
+  if (TextDecoderCtor) {
+    return new TextDecoderCtor().decode(bytes);
+  }
+
+  let output = '';
+  for (let i = 0; i < bytes.length; i += 1) {
+    const first = bytes[i]!;
+    if (first < 0x80) {
+      output += String.fromCodePoint(first);
+      continue;
+    }
+
+    let codePoint = 0xfffd;
+    if (first >= 0xc0 && first < 0xe0 && i + 1 < bytes.length) {
+      codePoint = ((first & 0x1f) << 6) | (bytes[i + 1]! & 0x3f);
+      i += 1;
+    } else if (first >= 0xe0 && first < 0xf0 && i + 2 < bytes.length) {
+      codePoint =
+        ((first & 0x0f) << 12) |
+        ((bytes[i + 1]! & 0x3f) << 6) |
+        (bytes[i + 2]! & 0x3f);
+      i += 2;
+    } else if (first >= 0xf0 && first < 0xf8 && i + 3 < bytes.length) {
+      codePoint =
+        ((first & 0x07) << 18) |
+        ((bytes[i + 1]! & 0x3f) << 12) |
+        ((bytes[i + 2]! & 0x3f) << 6) |
+        (bytes[i + 3]! & 0x3f);
+      i += 3;
+    }
+
+    output += String.fromCodePoint(codePoint);
+  }
+
+  return output;
+}
+
 interface WxRandomValuesResult {
   randomValues: ArrayBuffer;
 }

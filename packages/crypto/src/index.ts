@@ -20,10 +20,12 @@ export type {
 
 export {
   base64ToBytes,
+  bytesToUtf8,
   bytesToBase64,
   randomBytes,
   randomBytesAsync,
   timingSafeEqual,
+  utf8ToBytes,
   zeroize,
 } from './utils/encoding.js';
 

@@ -3,6 +3,7 @@ import {
   AES_KEY_LENGTH,
   base64ToBytes,
   bytesToBase64,
+  bytesToUtf8,
   calculatePasswordStrength,
   decryptJson,
   decryptVaultKey,
@@ -16,6 +17,7 @@ import {
   hashChallengeAnswer,
   normalizeChallengeAnswer,
   randomBytesAsync,
+  utf8ToBytes,
   zeroize,
 } from '@vaultpass/crypto';
 import { DEFAULT_KDF_PARAMS } from '@vaultpass/crypto';
@@ -168,7 +170,7 @@ export async function prepareEncryptedUpload(
   const fileKey = await randomBytesAsync(AES_KEY_LENGTH);
   const encryptedContent = await encryptFile(fileData, fileKey);
   const encryptedFileKey = await encryptJson({ key: bytesToBase64(fileKey) }, vaultKey);
-  const encryptedBytes = new TextEncoder().encode(encryptedContent);
+  const encryptedBytes = utf8ToBytes(encryptedContent);
   const tempPath = filePath.replace(/(\.[^./\\]+)?$/, '.enc');
 
   await writeUtf8File(tempPath, encryptedContent);
@@ -194,7 +196,7 @@ export async function decryptDownloadedBuffer(
   encryptedFileKey: string,
 ) {
   const vaultKey = vaultSession.requireVaultKey();
-  const encryptedContent = new TextDecoder().decode(new Uint8Array(buffer));
+  const encryptedContent = bytesToUtf8(new Uint8Array(buffer));
   return decryptStoredFile(encryptedContent, encryptedFileKey, vaultKey);
 }
 
@@ -241,11 +243,11 @@ export { calculatePasswordStrength };
 
 export function computeLookupHash(value: string) {
   const normalized = value.trim().toLowerCase();
-  return bytesToBase64(sha256(new TextEncoder().encode(normalized)));
+  return bytesToBase64(sha256(utf8ToBytes(normalized)));
 }
 
 function deriveContactKey(answer: string) {
-  return sha256(new TextEncoder().encode(normalizeChallengeAnswer(answer)));
+  return sha256(utf8ToBytes(normalizeChallengeAnswer(answer)));
 }
 
 export async function buildContactTakeoverMaterials(questionLabel: string, answer: string) {
@@ -275,7 +277,7 @@ export async function decryptStoredFile(
 }
 
 function deriveRecoveryKey(recoveryPassphrase: string) {
-  return sha256(new TextEncoder().encode(normalizeChallengeAnswer(recoveryPassphrase)));
+  return sha256(utf8ToBytes(normalizeChallengeAnswer(recoveryPassphrase)));
 }
 
 export async function buildRecoveryKeyPayload(recoveryPassphrase: string) {

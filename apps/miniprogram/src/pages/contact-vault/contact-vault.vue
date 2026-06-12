@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { onShow } from '@dcloudio/uni-app';
 import { ref } from 'vue';
+import { bytesToUtf8 } from '@vaultpass/crypto';
 import { contactVaultSession, downloadContactVaultFile } from '@/utils/api';
 import { decryptStoredFile } from '@/utils/crypto-flow';
 import { listContactVaultFiles, listContactVaultItems } from '@/utils/services';
@@ -68,7 +69,7 @@ async function handleDownload(file: {
   try {
     const vaultKey = contactVaultSession.requireVaultKey();
     const buffer = await downloadContactVaultFile(sessionId, file.id);
-    const encryptedContent = new TextDecoder().decode(new Uint8Array(buffer));
+    const encryptedContent = bytesToUtf8(new Uint8Array(buffer));
     const decrypted = await decryptStoredFile(encryptedContent, file.encryptedFileKey, vaultKey);
     const fs = uni.getFileSystemManager();
     const filePath = `${wx.env?.USER_DATA_PATH ?? ''}/vaultpass-${file.id}`;
