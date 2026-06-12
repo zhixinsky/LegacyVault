@@ -2,13 +2,16 @@
 import { computed, ref } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
 import { VButton } from '@vaultpass/ui';
+import { API_BASE_URL } from '@/config';
 import { vaultSession } from '@/utils/api';
 
 const route = useRoute();
 const router = useRouter();
 const headerQuery = ref('');
-const appLogoUrl =
+const appLogoFileId =
   'cloud://prod-d4g8kpg7x92d55205.7072-prod-d4g8kpg7x92d55205-1441616383/img/logo.webp';
+const appLogoUrl = new URL(`${API_BASE_URL}/files/cloud-image`, window.location.origin);
+appLogoUrl.searchParams.set('fileId', appLogoFileId);
 
 const navGroups = [
   {
@@ -80,7 +83,7 @@ function submitHeaderSearch() {
         <div class="flex items-center gap-3">
           <img
             class="h-11 w-11 rounded-2xl object-cover shadow-lg shadow-blue-200"
-            :src="appLogoUrl"
+            :src="appLogoUrl.toString()"
             alt="VaultPass"
           />
           <div>
