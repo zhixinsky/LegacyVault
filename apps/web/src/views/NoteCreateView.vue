@@ -17,7 +17,7 @@ import { downloadEncryptedFile, uploadEncryptedFile } from '@/utils/api';
 import { decryptVaultPayload, decryptVaultTitle, encryptVaultItemPayload } from '@/utils/crypto-flow';
 import { decryptDownloadedFile } from '@/utils/file-media';
 import { prepareEncryptedUpload } from '@/utils/crypto-flow';
-import { createVaultItem, getProfile, getVaultItem, updateVaultItem, type VaultFileItem } from '@/utils/services';
+import { createVaultItem, getProfile, getVaultItem, updateVaultItem, verifyMfa, type VaultFileItem } from '@/utils/services';
 import {
   EncryptedAttachment,
   EncryptedImage,
@@ -56,6 +56,12 @@ const uploadingAsset = ref(false);
 const downloadingAssetId = ref('');
 const mfaEnabled = ref(false);
 const mfaCode = ref('');
+const mfaPromptOpen = ref(false);
+const mfaPromptCode = ref('');
+const mfaPromptTitle = ref('');
+const mfaPromptError = ref('');
+const mfaPromptSubmitting = ref(false);
+let pendingMfaAction: ((code: string) => Promise<void>) | undefined;
 const insertMenuOpen = ref(false);
 const insertMenuPosition = ref({ left: 24, top: 24 });
 const codeLanguageControl = ref({
@@ -331,10 +337,16 @@ async function handleEditorClick(event: MouseEvent) {
 }
 
 async function downloadAsset(asset: EncryptedAssetAttrs) {
+  await requestMfaIfNeeded('下载附件前二次验证', async (code) => {
+    await performAssetDownload(asset, code);
+  });
+}
+
+async function performAssetDownload(asset: EncryptedAssetAttrs, code?: string) {
   downloadingAssetId.value = asset.fileId;
   error.value = '';
   try {
-    const buffer = await downloadEncryptedFile(asset.fileId, mfaCode.value || undefined);
+    const buffer = await downloadEncryptedFile(asset.fileId, code || undefined);
     const blob = await decryptDownloadedFile(buffer, asset.encryptedFileKey, asset.mimeType);
     const url = URL.createObjectURL(blob);
     const link = document.createElement('a');
@@ -387,6 +399,43 @@ async function hydrateEncryptedMedia(doc: RichNoteNode) {
   }));
 
   return cloned;
+}
+
+function requestMfaIfNeeded(title: string, action: (code: string) => Promise<void>) {
+  if (!mfaEnabled.value) {
+    return action('');
+  }
+
+  mfaPromptTitle.value = title;
+  mfaPromptCode.value = '';
+  mfaPromptError.value = '';
+  pendingMfaAction = action;
+  mfaPromptOpen.value = true;
+  return Promise.resolve();
+}
+
+async function confirmMfaPrompt() {
+  const code = mfaPromptCode.value.trim();
+  if (!code) {
+    mfaPromptError.value = '请输入二次验证码';
+    return;
+  }
+
+  const action = pendingMfaAction;
+  if (!action) return;
+
+  mfaPromptSubmitting.value = true;
+  mfaPromptError.value = '';
+  try {
+    await action(code);
+    mfaPromptOpen.value = false;
+    pendingMfaAction = undefined;
+    mfaPromptCode.value = '';
+  } catch (err) {
+    mfaPromptError.value = err instanceof Error ? err.message : '验证失败';
+  } finally {
+    mfaPromptSubmitting.value = false;
+  }
 }
 
 function stripRuntimeAssetUrls(doc: RichNoteNode) {
@@ -495,12 +544,6 @@ function formatTime(value: string) {
   return date.toLocaleTimeString('zh-CN', { hour: '2-digit', minute: '2-digit' });
 }
 
-async function reloadAssetPreviews() {
-  const doc = getEditorDoc();
-  if (!doc) return;
-  setEditorContent(await hydrateEncryptedMedia(stripRuntimeAssetUrls(doc)));
-}
-
 function insertBlock(kind: 'paragraph' | 'heading' | 'table' | 'image' | 'video' | 'attachment' | 'code' | 'quote' | 'todo') {
   if (mode.value !== 'edit') return;
   insertMenuOpen.value = false;
@@ -518,7 +561,23 @@ function insertBlock(kind: 'paragraph' | 'heading' | 'table' | 'image' | 'video'
   if (kind === 'todo') editor.value?.chain().focus().toggleTaskList().run();
 }
 
-function setMode(nextMode: 'read' | 'edit') {
+async function setMode(nextMode: 'read' | 'edit') {
+  if (nextMode === 'edit' && mode.value !== 'edit' && mfaEnabled.value) {
+    await requestMfaIfNeeded('编辑私密笔记前二次验证', async (code) => {
+      await verifyMfa(code);
+      mfaCode.value = code;
+      mode.value = 'edit';
+      insertMenuOpen.value = false;
+      codeLanguageControl.value.visible = false;
+      editor.value?.setEditable(true);
+      const doc = getEditorDoc();
+      if (doc) {
+        setEditorContent(await hydrateEncryptedMedia(stripRuntimeAssetUrls(doc)));
+      }
+    });
+    return;
+  }
+
   mode.value = nextMode;
   insertMenuOpen.value = false;
   codeLanguageControl.value.visible = false;
@@ -638,19 +697,31 @@ function setMode(nextMode: 'read' | 'edit') {
           </div>
         </div>
 
-        <div v-if="mfaEnabled" class="rounded-2xl bg-amber-50 px-4 py-3 text-sm leading-6 text-amber-800 ring-1 ring-amber-100">
-          已启用二次验证。图片预览和附件下载需要输入 6 位验证码：
-          <input
-            v-model="mfaCode"
-            class="ml-2 inline-block w-36 rounded-xl border border-amber-200 bg-white px-3 py-2 text-sm outline-none focus:border-amber-400"
-            placeholder="验证码"
-          />
-          <button class="ml-2 rounded-xl bg-amber-200 px-3 py-2 text-sm font-bold text-amber-900" @click="reloadAssetPreviews">
-            刷新图片预览
-          </button>
-        </div>
-
         <p v-if="error" class="rounded-2xl bg-red-50 px-4 py-3 text-sm font-semibold text-red-600">{{ error }}</p>
+      </div>
+    </div>
+
+    <div
+      v-if="mfaPromptOpen"
+      class="fixed inset-0 z-50 flex items-center justify-center bg-black/40 px-4"
+      @click.self="mfaPromptOpen = false"
+    >
+      <div class="w-full max-w-sm rounded-2xl bg-white p-6 shadow-xl ring-1 ring-slate-200">
+        <h3 class="text-lg font-bold text-slate-900">{{ mfaPromptTitle }}</h3>
+        <p class="mt-2 text-sm text-slate-500">请输入 6 位二次验证码后继续。</p>
+        <input
+          v-model="mfaPromptCode"
+          class="mt-4 w-full rounded-xl border border-slate-300 px-3 py-2 text-sm outline-none focus:border-blue-400 focus:ring-4 focus:ring-blue-100"
+          placeholder="6 位验证码"
+          @keyup.enter="confirmMfaPrompt"
+        />
+        <p v-if="mfaPromptError" class="mt-3 text-sm font-semibold text-red-600">{{ mfaPromptError }}</p>
+        <div class="mt-5 flex gap-2">
+          <VButton variant="primary" :disabled="mfaPromptSubmitting" @click="confirmMfaPrompt">
+            {{ mfaPromptSubmitting ? '验证中...' : '确认' }}
+          </VButton>
+          <VButton variant="secondary" @click="mfaPromptOpen = false">取消</VButton>
+        </div>
       </div>
     </div>
   </div>

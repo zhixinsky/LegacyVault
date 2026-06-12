@@ -55,7 +55,13 @@ const mfaCode = ref('');
 
 const showMfaPrompt = ref(false);
 
-const pendingDownload = ref<VaultFileItem | null>(null);
+const mfaPromptTitle = ref('');
+
+const mfaPromptConfirmText = ref('确认');
+
+const mfaSubmitting = ref(false);
+
+let pendingMfaAction: ((code: string) => Promise<void>) | undefined;
 
 const error = ref('');
 
@@ -100,8 +106,9 @@ async function loadFiles() {
     const result = await listFiles();
     const rows: FileRow[] = [];
 
-    for (const item of result.items) {
+    for (const item of result.items.filter((file) => file.fileType === 'document' && !file.albumId)) {
       const meta = await decryptFileMetadata(item.encryptedMetadata);
+      if (meta.tags === '私密笔记') continue;
       rows.push({
         ...item,
         displayName: meta.displayName ?? '',
@@ -170,46 +177,49 @@ async function handleUpload(event: Event) {
 
 
 function handleDownloadClick(file: VaultFileItem) {
-
-  if (mfaEnabled.value && !mfaCode.value) {
-
-    pendingDownload.value = file;
-
-    showMfaPrompt.value = true;
-
-    return;
-
-  }
-
-  void performDownload(file);
-
+  void requestMfaIfNeeded('下载前二次验证', '确认下载', (code) => performDownload(file, code));
 }
 
+function requestMfaIfNeeded(title: string, confirmText: string, action: (code: string) => Promise<void>) {
+  if (!mfaEnabled.value) {
+    return action('');
+  }
 
+  mfaCode.value = '';
+  mfaPromptTitle.value = title;
+  mfaPromptConfirmText.value = confirmText;
+  pendingMfaAction = action;
+  showMfaPrompt.value = true;
+  return Promise.resolve();
+}
 
-async function confirmMfaDownload() {
-
-  if (!pendingDownload.value) return;
-
-  if (!mfaCode.value) {
-
+async function confirmMfaAction() {
+  const code = mfaCode.value.trim();
+  if (!code) {
     error.value = '请输入二次验证码';
-
     return;
-
   }
 
-  showMfaPrompt.value = false;
+  const action = pendingMfaAction;
+  if (!action) return;
 
-  await performDownload(pendingDownload.value);
-
-  pendingDownload.value = null;
-
+  mfaSubmitting.value = true;
+  error.value = '';
+  try {
+    await action(code);
+    showMfaPrompt.value = false;
+    pendingMfaAction = undefined;
+    mfaCode.value = '';
+  } catch (err) {
+    error.value = err instanceof Error ? err.message : '验证失败';
+  } finally {
+    mfaSubmitting.value = false;
+  }
 }
 
 
 
-async function performDownload(file: VaultFileItem) {
+async function performDownload(file: VaultFileItem, code?: string) {
 
   downloadingId.value = file.id;
 
@@ -217,7 +227,7 @@ async function performDownload(file: VaultFileItem) {
 
   try {
 
-    const buffer = await downloadEncryptedFile(file.id, mfaCode.value || undefined);
+    const buffer = await downloadEncryptedFile(file.id, code || undefined);
 
     const blob = await decryptDownloadedFile(buffer, file.encryptedFileKey, file.mimeType);
 
@@ -316,15 +326,10 @@ async function handlePreview(file: VaultFileItem) {
 
   if (!isImageFile(file) && !isVideoFile(file)) return;
 
-  if (mfaEnabled.value && !mfaCode.value) {
+  await requestMfaIfNeeded('预览前二次验证', '确认预览', (code) => performPreview(file, code));
+}
 
-    pendingDownload.value = file;
-
-    showMfaPrompt.value = true;
-
-    return;
-
-  }
+async function performPreview(file: VaultFileItem, code?: string) {
 
   previewingId.value = file.id;
 
@@ -334,7 +339,7 @@ async function handlePreview(file: VaultFileItem) {
 
   try {
 
-    const buffer = await downloadEncryptedFile(file.id, mfaCode.value || undefined);
+    const buffer = await downloadEncryptedFile(file.id, code || undefined);
 
     const blob = await decryptDownloadedFile(buffer, file.encryptedFileKey, file.mimeType);
 
@@ -395,24 +400,6 @@ async function handlePreview(file: VaultFileItem) {
         class="rounded-lg border border-slate-300 px-3 py-2 text-sm"
         placeholder="标签，逗号分隔（可选）"
       />
-    </div>
-
-
-
-    <div v-if="mfaEnabled" class="rounded-xl bg-amber-50 p-4 text-sm text-amber-800 ring-1 ring-amber-200">
-
-      已启用二次验证，下载文件前请输入验证码
-
-      <input
-
-        v-model="mfaCode"
-
-        class="mt-2 w-full max-w-xs rounded-lg border border-amber-300 px-3 py-2 text-sm"
-
-        placeholder="6 位验证码"
-
-      />
-
     </div>
 
 
@@ -543,7 +530,7 @@ async function handlePreview(file: VaultFileItem) {
 
       <div class="w-full max-w-sm rounded-xl bg-white p-6 ring-1 ring-slate-200">
 
-        <h3 class="font-semibold text-slate-900">下载前二次验证</h3>
+        <h3 class="font-semibold text-slate-900">{{ mfaPromptTitle }}</h3>
 
         <input
 
@@ -552,12 +539,15 @@ async function handlePreview(file: VaultFileItem) {
           class="mt-4 w-full rounded-lg border border-slate-300 px-3 py-2 text-sm"
 
           placeholder="输入 6 位验证码"
+          @keyup.enter="confirmMfaAction"
 
         />
 
         <div class="mt-4 flex gap-2">
 
-          <VButton variant="primary" @click="confirmMfaDownload">确认下载</VButton>
+          <VButton variant="primary" :disabled="mfaSubmitting" @click="confirmMfaAction">
+            {{ mfaSubmitting ? '验证中...' : mfaPromptConfirmText }}
+          </VButton>
 
           <VButton variant="secondary" @click="showMfaPrompt = false">取消</VButton>
 

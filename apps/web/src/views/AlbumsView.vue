@@ -37,6 +37,10 @@ const uploading = ref(false);
 const previewingId = ref('');
 const mfaEnabled = ref(false);
 const mfaCode = ref('');
+const showMfaPrompt = ref(false);
+const mfaPromptTitle = ref('');
+const mfaPromptConfirmText = ref('确认');
+const mfaSubmitting = ref(false);
 const error = ref('');
 
 const previewUrl = ref('');
@@ -53,6 +57,7 @@ const { thumbUrls, loadingIds, loadThumbnail, cleanup: cleanupThumbs } = useFile
   () => mfaCode.value,
 );
 let thumbObserver: IntersectionObserver | null = null;
+let pendingMfaAction: ((code: string) => Promise<void>) | undefined;
 
 onMounted(async () => {
   try {
@@ -277,17 +282,53 @@ function closePreview() {
 
 async function handlePreview(file: VaultFileItem) {
   if (!isImageFile(file) && !isVideoFile(file)) return;
-  if (mfaEnabled.value && !mfaCode.value) {
-    error.value = '预览前请输入二次验证码';
+  await requestMfaIfNeeded('预览前二次验证', '确认预览', (code) => performPreview(file, code));
+}
+
+function requestMfaIfNeeded(title: string, confirmText: string, action: (code: string) => Promise<void>) {
+  if (!mfaEnabled.value) {
+    return action('');
+  }
+
+  mfaCode.value = '';
+  mfaPromptTitle.value = title;
+  mfaPromptConfirmText.value = confirmText;
+  pendingMfaAction = action;
+  showMfaPrompt.value = true;
+  return Promise.resolve();
+}
+
+async function confirmMfaAction() {
+  const code = mfaCode.value.trim();
+  if (!code) {
+    error.value = '请输入二次验证码';
     return;
   }
 
+  const action = pendingMfaAction;
+  if (!action) return;
+
+  mfaSubmitting.value = true;
+  error.value = '';
+  try {
+    await action(code);
+    showMfaPrompt.value = false;
+    pendingMfaAction = undefined;
+    mfaCode.value = '';
+  } catch (err) {
+    error.value = err instanceof Error ? err.message : '验证失败';
+  } finally {
+    mfaSubmitting.value = false;
+  }
+}
+
+async function performPreview(file: VaultFileItem, code?: string) {
   previewingId.value = file.id;
   error.value = '';
   closePreview();
 
   try {
-    const buffer = await downloadEncryptedFile(file.id, mfaCode.value || undefined);
+    const buffer = await downloadEncryptedFile(file.id, code || undefined);
     const blob = await decryptDownloadedFile(buffer, file.encryptedFileKey, file.mimeType);
     previewUrl.value = createObjectUrl(blob);
     previewMime.value = file.mimeType;
@@ -412,15 +453,6 @@ function fileLabel(file: VaultFileItem) {
         </p>
       </div>
 
-      <div v-if="mfaEnabled && selectedAlbumId" class="mt-4 rounded-lg bg-amber-50 p-3 text-sm text-amber-800">
-        预览/下载前请输入二次验证码
-        <input
-          v-model="mfaCode"
-          class="mt-2 w-full rounded-lg border border-amber-300 px-3 py-2 text-sm"
-          placeholder="6 位验证码"
-        />
-      </div>
-
       <p v-if="!selectedAlbumId" class="mt-8 text-center text-slate-400">请选择相册</p>
       <p v-else-if="albumFiles.length === 0" class="mt-8 text-center text-slate-400">暂无图片或视频</p>
       <div v-else class="mt-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
@@ -506,6 +538,28 @@ function fileLabel(file: VaultFileItem) {
     </div>
 
     <p v-if="error" class="lg:col-span-2 text-sm text-red-600">{{ error }}</p>
+
+    <div
+      v-if="showMfaPrompt"
+      class="fixed inset-0 z-50 flex items-center justify-center bg-black/40 px-4"
+      @click.self="showMfaPrompt = false"
+    >
+      <div class="w-full max-w-sm rounded-xl bg-white p-6 ring-1 ring-slate-200">
+        <h3 class="font-semibold text-slate-900">{{ mfaPromptTitle }}</h3>
+        <input
+          v-model="mfaCode"
+          class="mt-4 w-full rounded-lg border border-slate-300 px-3 py-2 text-sm"
+          placeholder="输入 6 位验证码"
+          @keyup.enter="confirmMfaAction"
+        />
+        <div class="mt-4 flex gap-2">
+          <VButton variant="primary" :disabled="mfaSubmitting" @click="confirmMfaAction">
+            {{ mfaSubmitting ? '验证中...' : mfaPromptConfirmText }}
+          </VButton>
+          <VButton variant="secondary" @click="showMfaPrompt = false">取消</VButton>
+        </div>
+      </div>
+    </div>
 
     <div
       v-if="previewUrl"
