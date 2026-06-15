@@ -9,7 +9,6 @@ import {
   sendEmailLoginCode,
   unbindWechat,
 } from '@/utils/services';
-import { syncCustomTabBar } from '@/utils/tabbar';
 
 const loading = ref(false);
 const wxLoading = ref(false);
@@ -30,7 +29,6 @@ const emailCountdown = ref(0);
 let emailCountdownTimer: ReturnType<typeof setInterval> | null = null;
 
 onShow(() => {
-  syncCustomTabBar('/pages/profile/profile');
   loadProfile();
 });
 

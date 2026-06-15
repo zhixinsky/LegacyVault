@@ -358,6 +358,10 @@ function goLogin() {
         </view>
       </template>
 
+      <view class="session-tip">
+        <text>仅首次进入当前登录会话需要输入主密码解密保险箱；解锁成功后，本次会话内切换页面不会重复要求主密码。</text>
+      </view>
+
       <view class="security-card">
         <view class="security-icon">
           <image src="/static/icons/login/shield-solid.svg" mode="aspectFit" />
@@ -587,6 +591,17 @@ button::after {
   line-height: 1.55;
 }
 
+.session-tip {
+  margin-top: 28rpx;
+  padding: 20rpx 22rpx;
+  border: 1rpx solid rgba(30, 77, 255, 0.14);
+  border-radius: 18rpx;
+  background: rgba(238, 246, 255, 0.88);
+  color: #1e4dff;
+  font-size: 24rpx;
+  line-height: 1.55;
+}
+
 .security-card {
   display: flex;
   align-items: center;
@@ -650,7 +665,18 @@ button::after {
 }
 
 .primary-button.disabled {
-  opacity: 0.9;
+  color: #ffffff;
+  opacity: 1;
+}
+
+.primary-button[disabled] {
+  color: #ffffff !important;
+  background: linear-gradient(135deg, #3d83ff 0%, #1e4dff 100%) !important;
+  opacity: 1 !important;
+}
+
+.primary-button[disabled] text {
+  color: #ffffff !important;
 }
 
 .button-lock {

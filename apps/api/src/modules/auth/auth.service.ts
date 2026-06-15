@@ -331,7 +331,16 @@ export class AuthService {
     }
 
     const code = this.generateOtpCode();
-    await this.sendLoginEmailOtp(dto.email, code);
+    try {
+      await this.sendLoginEmailOtp(dto.email, code);
+    } catch (error) {
+      this.logger.error(
+        `Login email OTP failed for ${this.maskEmail(dto.email)}: ${
+          error instanceof Error ? error.message : String(error)
+        }`,
+      );
+      throw new BadRequestException('邮箱验证码发送失败，请稍后再试或检查邮箱配置');
+    }
 
     this.codeStore.set(key, {
 

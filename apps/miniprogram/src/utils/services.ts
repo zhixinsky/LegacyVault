@@ -332,6 +332,7 @@ export function revealVaultPassword(id: string, mfaCode?: string) {
 
 export interface ExtendedUserProfile extends UserProfile {
   mfaEnabled: boolean;
+  mfaConfigured?: boolean;
   vaultKeyBundle?: NonNullable<AuthResult['vaultKeyBundle']>;
   recoveryKeyConfigured?: boolean;
   recoveryKeyHint?: string;
@@ -504,7 +505,7 @@ export function setupMfa() {
   });
 }
 
-export function enableMfa(secret: string, code: string) {
+export function enableMfa(secret: string | undefined, code: string) {
   return request({ url: '/users/me/mfa/enable', method: 'POST', data: { secret, code } });
 }
 

@@ -1,17 +1,19 @@
-<view class="tab-shell {{visible ? '' : 'hidden'}}">
+<view class="tab-shell">
   <view class="tab-capsule">
     <view
       wx:for="{{list}}"
+      wx:for-index="idx"
+      wx:for-item="item"
       wx:key="pagePath"
-      class="tab-item {{selected === index ? 'active' : ''}}"
-      data-index="{{index}}"
+      class="tab-item {{selected == idx ? 'active' : ''}}"
+      data-index="{{idx}}"
       data-path="{{item.pagePath}}"
       bindtap="switchTab"
     >
       <view class="tab-icon-box">
         <image
           class="tab-icon"
-          src="{{selected === index ? item.activeIcon : item.icon}}"
+          src="{{selected == idx ? item.activeIcon : item.icon}}"
           mode="aspectFit"
         />
       </view>

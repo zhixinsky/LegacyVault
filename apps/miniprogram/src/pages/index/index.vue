@@ -9,7 +9,6 @@ import {
   listTrustedContacts,
   listVaultItems,
 } from '@/utils/services';
-import { syncCustomTabBar } from '@/utils/tabbar';
 
 const loading = ref(false);
 const totalItems = ref(0);
@@ -57,7 +56,6 @@ const tools = [
 ];
 
 onShow(() => {
-  syncCustomTabBar('/pages/index/index');
   void guardAndLoad();
 });
 

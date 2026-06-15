@@ -1,9 +1,10 @@
-import { IsNotEmpty, IsString, Length } from 'class-validator';
+import { IsNotEmpty, IsOptional, IsString, Length } from 'class-validator';
 
 export class EnableMfaDto {
   @IsString()
   @IsNotEmpty()
-  secret!: string;
+  @IsOptional()
+  secret?: string;
 
   @IsString()
   @Length(6, 6)

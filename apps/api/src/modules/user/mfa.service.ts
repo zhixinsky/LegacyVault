@@ -29,17 +29,28 @@ export class MfaService {
 
   async enableMfa(
     userId: string,
-    secret: string,
+    secret: string | undefined,
     code: string,
     meta: { ip?: string; device?: string },
   ) {
-    if (!authenticator.verify({ token: code, secret })) {
+    const existing = secret
+      ? null
+      : await this.prisma.user.findUnique({
+          where: { id: userId },
+          select: { mfaSecret: true },
+        });
+    const nextSecret = secret || existing?.mfaSecret;
+    if (!nextSecret) {
+      throw new BadRequestException('请先生成二次验证密钥');
+    }
+
+    if (!authenticator.verify({ token: code, secret: nextSecret })) {
       throw new UnauthorizedException('验证码错误');
     }
 
     await this.prisma.user.update({
       where: { id: userId },
-      data: { mfaSecret: secret, mfaEnabled: true },
+      data: { mfaSecret: nextSecret, mfaEnabled: true },
     });
 
     await this.auditLogService.log({
@@ -63,7 +74,7 @@ export class MfaService {
 
     await this.prisma.user.update({
       where: { id: userId },
-      data: { mfaSecret: null, mfaEnabled: false },
+      data: { mfaEnabled: false },
     });
 
     await this.auditLogService.log({

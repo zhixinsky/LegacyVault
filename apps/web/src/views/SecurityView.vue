@@ -30,6 +30,7 @@ import {
 
 
 const mfaEnabled = ref(false);
+const mfaConfigured = ref(false);
 
 const recoveryConfigured = ref(false);
 
@@ -86,6 +87,7 @@ async function loadAll() {
     ]);
 
     mfaEnabled.value = profile.mfaEnabled;
+    mfaConfigured.value = profile.mfaConfigured ?? profile.mfaEnabled;
 
     recoveryConfigured.value = profile.recoveryKeyConfigured ?? false;
 
@@ -169,7 +171,7 @@ async function copyText(text: string, successText: string) {
 
 async function handleEnableMfa() {
 
-  if (!setupSecret.value || !verifyCode.value) {
+  if (!setupSecret.value && !mfaConfigured.value) {
 
     error.value = '请先完成设置并输入验证码';
 
@@ -177,11 +179,20 @@ async function handleEnableMfa() {
 
   }
 
+  if (!verifyCode.value) {
+
+    error.value = '请输入验证码';
+
+    return;
+
+  }
+
   try {
 
-    await enableMfa(setupSecret.value, verifyCode.value);
+    await enableMfa(setupSecret.value || undefined, verifyCode.value);
 
     mfaEnabled.value = true;
+    mfaConfigured.value = true;
 
     setupSecret.value = '';
     otpauthUrl.value = '';
@@ -386,7 +397,19 @@ async function handleRevokeDevice(id: string) {
 
       <div v-if="!mfaEnabled" class="mt-6 space-y-4">
 
-        <VButton variant="primary" :disabled="loading" @click="handleSetupMfa">生成二次验证密钥</VButton>
+        <div v-if="mfaConfigured && !setupSecret" class="rounded-2xl bg-blue-50 p-4 text-sm text-slate-600 ring-1 ring-blue-100">
+          <p class="font-semibold text-slate-900">已绑定验证器 App</p>
+          <p class="mt-2">如果您之前已用 Google Authenticator、Microsoft Authenticator 等 App 扫码绑定过，直接输入当前 6 位验证码即可重新启用。</p>
+          <p class="mt-2 text-blue-700">只有更换手机或想重新绑定时，才需要重新生成二维码。</p>
+        </div>
+
+        <VButton
+          :variant="mfaConfigured && !setupSecret ? 'secondary' : 'primary'"
+          :disabled="loading"
+          @click="handleSetupMfa"
+        >
+          {{ mfaConfigured && !setupSecret ? '更换验证器 / 重新生成二维码' : '生成二次验证密钥' }}
+        </VButton>
 
         <div v-if="setupSecret" class="space-y-4 rounded-2xl bg-slate-50 p-4 ring-1 ring-slate-200">
           <div v-if="otpauthQrCode" class="rounded-2xl bg-white p-4 text-center ring-1 ring-slate-200">
@@ -412,7 +435,9 @@ async function handleRevokeDevice(id: string) {
 
         <input v-model="verifyCode" class="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm" placeholder="输入 6 位验证码以启用" />
 
-        <VButton variant="primary" @click="handleEnableMfa">确认启用</VButton>
+        <VButton variant="primary" @click="handleEnableMfa">
+          {{ mfaConfigured && !setupSecret ? '重新启用二次验证' : '确认启用' }}
+        </VButton>
 
       </div>
 

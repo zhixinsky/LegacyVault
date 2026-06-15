@@ -12,13 +12,6 @@
   pointer-events: auto;
 }
 
-.tab-shell.hidden {
-  display: none !important;
-  visibility: hidden;
-  opacity: 0;
-  pointer-events: none;
-}
-
 .tab-capsule {
   width: 690rpx;
   height: 88rpx;

@@ -29,6 +29,8 @@ export const AUDIT_ACTION_LABELS: Record<string, string> = {
   'vault.item.permanent_delete': '永久删除条目',
   'user.wechat.bind': '绑定微信',
   'user.wechat.unbind': '解绑微信',
+  'user.phone.bind': '绑定手机号',
+  'user.email.bind': '绑定邮箱',
   'user.profile.update': '更新个人资料',
   'file.upload': '上传加密文件',
   'file.download': '下载加密文件',

@@ -19,13 +19,13 @@ import {
   setupMfa,
   setupRecoveryKey,
 } from '@/utils/services';
-import { syncCustomTabBar } from '@/utils/tabbar';
 
 const logs = ref<Array<{ id: string; actionLabel: string; riskLevel: string; time: string }>>([]);
 const notifications = ref<
   Array<{ id: string; typeLabel: string; channelLabel: string; status: string; time: string }>
 >([]);
 const mfaEnabled = ref(false);
+const mfaConfigured = ref(false);
 const recoveryConfigured = ref(false);
 const recoveryHint = ref('');
 const setupSecret = ref('');
@@ -43,7 +43,6 @@ const mfaLoading = ref(false);
 const recoveryLoading = ref(false);
 
 onShow(async () => {
-  syncCustomTabBar('/pages/security/security');
   await Promise.all([loadLogs(), loadProfile(), loadDevices(), loadNotifications()]);
 });
 
@@ -51,6 +50,7 @@ async function loadProfile() {
   try {
     const profile = await getProfile();
     mfaEnabled.value = profile.mfaEnabled;
+    mfaConfigured.value = profile.mfaConfigured ?? profile.mfaEnabled;
     recoveryConfigured.value = profile.recoveryKeyConfigured ?? false;
     recoveryHint.value = profile.recoveryKeyHint ?? '';
     if (profile.vaultKeyBundle) {
@@ -136,13 +136,18 @@ async function handleSetupMfa() {
 }
 
 async function handleEnableMfa() {
-  if (!setupSecret.value || !verifyCode.value) {
+  if (!setupSecret.value && !mfaConfigured.value) {
     uni.showToast({ title: '请先生成密钥并输入验证码', icon: 'none' });
     return;
   }
+  if (!verifyCode.value) {
+    uni.showToast({ title: '请输入验证码', icon: 'none' });
+    return;
+  }
   try {
-    await enableMfa(setupSecret.value, verifyCode.value);
+    await enableMfa(setupSecret.value || undefined, verifyCode.value);
     mfaEnabled.value = true;
+    mfaConfigured.value = true;
     setupSecret.value = '';
     otpauthUrl.value = '';
     otpauthQrCode.value = '';
@@ -254,13 +259,33 @@ function copyMfaText(text: string, title: string) {
         <text class="section-title">二次验证 (TOTP)</text>
         <text v-if="mfaEnabled" class="hint success-text">已启用</text>
         <view v-if="!mfaEnabled" class="form">
-          <view class="mfa-guide">
+          <view v-if="mfaConfigured && !setupSecret" class="mfa-guide">
+            <text class="guide-title">已绑定验证器 App</text>
+            <text class="guide-text">如果您之前已用 Google Authenticator、Microsoft Authenticator 等 App 扫码绑定过，直接输入当前 6 位验证码即可重新启用。</text>
+            <text class="guide-text guide-accent">只有更换手机或想重新绑定时，才需要重新生成二维码。</text>
+          </view>
+          <view v-else class="mfa-guide">
             <text class="guide-title">使用方式</text>
             <text class="guide-text">点击生成后，打开 Microsoft Authenticator、Google Authenticator、1Password 或 Authy，选择“添加账号/扫描二维码”。</text>
             <text class="guide-text">扫描成功后，验证器 App 会每 30 秒生成一个 6 位验证码，把当前验证码填回本页并确认启用。</text>
             <text class="guide-text guide-accent">如果无法扫码，可以复制手动密钥添加账号。</text>
           </view>
-          <button class="btn btn-primary" :disabled="mfaLoading" @tap="handleSetupMfa">生成验证密钥</button>
+          <button
+            v-if="!mfaConfigured || setupSecret"
+            class="btn btn-primary"
+            :disabled="mfaLoading"
+            @tap="handleSetupMfa"
+          >
+            生成验证密钥
+          </button>
+          <button
+            v-else
+            class="btn btn-secondary"
+            :disabled="mfaLoading"
+            @tap="handleSetupMfa"
+          >
+            更换验证器 / 重新生成二维码
+          </button>
           <view v-if="setupSecret" class="mfa-setup-card">
             <view v-if="otpauthQrCode" class="qr-card">
               <text class="qr-title">使用验证器 App 扫描二维码</text>
@@ -279,7 +304,9 @@ function copyMfaText(text: string, title: string) {
             </view>
           </view>
           <input v-model="verifyCode" class="input" placeholder="输入 6 位验证码" />
-          <button class="btn btn-primary" @tap="handleEnableMfa">确认启用</button>
+          <button class="btn btn-primary" @tap="handleEnableMfa">
+            {{ mfaConfigured && !setupSecret ? '重新启用二次验证' : '确认启用' }}
+          </button>
         </view>
         <view v-else class="form">
           <input v-model="disableCode" class="input" placeholder="输入验证码以关闭" />

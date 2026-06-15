@@ -152,6 +152,14 @@ export function sendEmailLoginCode(email: string) {
   });
 }
 
+export function bindEmailWithCode(email: string, code: string) {
+  return request<{ bound: boolean; email: string }>({
+    url: '/auth/me/email/bind',
+    method: 'POST',
+    body: { email, code },
+  });
+}
+
 export function loginWithEmailCode(email: string, code: string) {
   return request<AuthLoginResponse>({
     url: '/auth/login-with-email-code',
@@ -176,6 +184,7 @@ export function heartbeat() {
 
 export interface ExtendedUserProfile extends UserProfile {
   mfaEnabled: boolean;
+  mfaConfigured?: boolean;
   vaultKeyBundle?: NonNullable<AuthResult['vaultKeyBundle']>;
   recoveryKeyConfigured?: boolean;
   recoveryKeyHint?: string;
@@ -278,7 +287,7 @@ export function setupMfa() {
   });
 }
 
-export function enableMfa(secret: string, code: string) {
+export function enableMfa(secret: string | undefined, code: string) {
   return request({ url: '/users/me/mfa/enable', method: 'POST', body: { secret, code } });
 }
 

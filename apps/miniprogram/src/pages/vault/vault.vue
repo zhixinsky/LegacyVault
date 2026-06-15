@@ -12,7 +12,6 @@ import {
   type VaultFileItem,
   type VaultItem,
 } from '@/utils/services';
-import { syncCustomTabBar } from '@/utils/tabbar';
 
 type CategoryKey = 'password' | 'account' | 'note' | 'file' | 'album';
 
@@ -91,7 +90,6 @@ const secondaryTools = [
 ];
 
 onShow(() => {
-  syncCustomTabBar('/pages/vault/vault');
   loadDashboard();
   heartbeat().catch(() => undefined);
 });
