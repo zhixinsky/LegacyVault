@@ -149,6 +149,7 @@
       "style": { "navigationBarTitleText": "搜索" }
     }
   ],
+  "workers": "static/workers",
   "globalStyle": {
     "navigationBarTextStyle": "black",
     "navigationBarTitleText": "VaultPass",

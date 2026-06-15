@@ -7,13 +7,16 @@ import { bytesToUtf8 } from '@vaultpass/crypto';
 
 import { downloadEncryptedFile } from '@/utils/api';
 
-import { decryptStoredFile, prepareEncryptedUpload } from '@/utils/crypto-flow';
+import { decryptFileMetadata, decryptStoredFile, prepareEncryptedUpload } from '@/utils/crypto-flow';
 
 import { getProfile, listFiles, uploadEncryptedFile, type VaultFileItem } from '@/utils/services';
 
+interface ManagedFileItem extends VaultFileItem {
+  displayName: string;
+  tags?: string;
+}
 
-
-const files = ref<VaultFileItem[]>([]);
+const files = ref<ManagedFileItem[]>([]);
 
 const loading = ref(false);
 
@@ -56,8 +59,22 @@ async function loadFiles() {
   try {
 
     const result = await listFiles();
-
-    files.value = result.items;
+    const rows: ManagedFileItem[] = [];
+    for (const file of result.items) {
+      if (file.fileType !== 'document' || file.albumId) continue;
+      let displayName = file.mimeType || '加密文件';
+      let tags = '';
+      try {
+        const metadata = await decryptFileMetadata(file.encryptedMetadata);
+        if (metadata.tags === '私密笔记') continue;
+        displayName = metadata.displayName || displayName;
+        tags = metadata.tags ?? '';
+      } catch {
+        // Metadata can be absent for older files; keep the encrypted file visible.
+      }
+      rows.push({ ...file, displayName, tags });
+    }
+    files.value = rows;
 
   } catch (error) {
 
@@ -231,9 +248,9 @@ async function handleDownload(file: VaultFileItem) {
 
     <view class="card">
 
-      <text class="title">加密文件</text>
+      <text class="title">文件管理</text>
 
-      <text class="subtitle">本地加密上传；下载需二次验证（如已启用 MFA）</text>
+      <text class="subtitle">与 PC 端文件管理一致，仅展示普通加密文档；下载需二次验证（如已启用 MFA）</text>
 
 
 
@@ -274,7 +291,10 @@ async function handleDownload(file: VaultFileItem) {
 
         <view v-for="file in files" :key="file.id" class="list-item file-row">
 
-          <text class="hint">{{ file.fileType }} · {{ file.fileSize }} bytes</text>
+          <view class="file-copy">
+            <text class="file-title">{{ file.displayName }}</text>
+            <text class="hint">{{ file.tags ? `${file.tags} · ` : '' }}{{ file.fileSize }} bytes</text>
+          </view>
 
           <button
 
@@ -346,6 +366,22 @@ async function handleDownload(file: VaultFileItem) {
 
   justify-content: space-between;
 
+}
+
+.file-copy {
+  min-width: 0;
+  flex: 1;
+}
+
+.file-title {
+  display: block;
+  max-width: 460rpx;
+  overflow: hidden;
+  color: #0b1f4d;
+  font-size: 28rpx;
+  font-weight: 600;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 

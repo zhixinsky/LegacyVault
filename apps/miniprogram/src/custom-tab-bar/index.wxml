@@ -1,14 +1,21 @@
-<cover-view class="vp-tabbar-shell">
-  <cover-view class="vp-tabbar-glass">
-    <cover-view
-      wx:for="{{tabs}}"
+<view class="tab-shell {{visible ? '' : 'hidden'}}">
+  <view class="tab-capsule">
+    <view
+      wx:for="{{list}}"
       wx:key="pagePath"
+      class="tab-item {{selected === index ? 'active' : ''}}"
       data-index="{{index}}"
-      class="vp-tabbar-item {{currentPath === item.pagePath ? 'active' : ''}}"
+      data-path="{{item.pagePath}}"
       bindtap="switchTab"
     >
-      <cover-view class="vp-tabbar-icon">{{item.icon}}</cover-view>
-      <cover-view class="vp-tabbar-text">{{item.text}}</cover-view>
-    </cover-view>
-  </cover-view>
-</cover-view>
+      <view class="tab-icon-box">
+        <image
+          class="tab-icon"
+          src="{{selected === index ? item.activeIcon : item.icon}}"
+          mode="aspectFit"
+        />
+      </view>
+      <view class="tab-text">{{item.text}}</view>
+    </view>
+  </view>
+</view>

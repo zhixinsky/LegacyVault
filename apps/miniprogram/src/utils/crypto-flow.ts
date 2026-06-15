@@ -24,6 +24,35 @@ import { DEFAULT_KDF_PARAMS } from '@vaultpass/crypto';
 import type { FileMetadata } from '@vaultpass/types';
 import { vaultSession } from './api';
 
+type DerivedMasterKeyMessage =
+  | {
+      id: string;
+      type: 'derive-master-key:success';
+      masterKey: string;
+      kdfSalt: string;
+      kdfParams: ReturnType<typeof deriveMasterKeyByPassword>['kdfParams'];
+    }
+  | {
+      id: string;
+      type: 'derive-master-key:error';
+      message?: string;
+    };
+
+interface MiniProgramWorker {
+  postMessage: (message: Record<string, unknown>) => void;
+  onMessage: (callback: (message: DerivedMasterKeyMessage) => void) => void;
+  onError?: (callback: (error: { errMsg?: string; message?: string }) => void) => void;
+  terminate: () => void;
+}
+
+interface WxWorkerRuntime {
+  createWorker?: (scriptPath: string) => MiniProgramWorker;
+}
+
+function getWxWorkerRuntime(): WxWorkerRuntime | undefined {
+  return (globalThis as typeof globalThis & { wx?: WxWorkerRuntime }).wx;
+}
+
 export async function registerWithMasterPassword(
   identity: { phone?: string; email?: string; username?: string; password?: string },
   masterPassword: string,
@@ -89,18 +118,104 @@ async function generateRecoveryKeyAsync() {
   return Array.from({ length: 6 }, (_, index) => chars.slice(index * 4, index * 4 + 4).join('')).join('-');
 }
 
-export async function unlockVaultWithMasterPassword(masterPassword: string) {
+async function deriveMasterKeyInWorker(
+  password: string,
+  salt: string,
+  params: ReturnType<typeof deriveMasterKeyByPassword>['kdfParams'],
+) {
+  const wxRuntime = getWxWorkerRuntime();
+  if (!wxRuntime?.createWorker) {
+    throw new Error('当前运行环境不支持 Worker');
+  }
+
+  const worker = wxRuntime.createWorker('static/workers/derive-master-key.js');
+  const id = `${Date.now()}-${Math.random().toString(16).slice(2)}`;
+
+  return new Promise<ReturnType<typeof deriveMasterKeyByPassword>>((resolve, reject) => {
+    let settled = false;
+    const timeout = setTimeout(() => {
+      if (settled) return;
+      settled = true;
+      worker.terminate();
+      reject(new Error('密钥派生超时，请重试'));
+    }, 120000);
+
+    function finish(callback: () => void) {
+      if (settled) return;
+      settled = true;
+      clearTimeout(timeout);
+      worker.terminate();
+      callback();
+    }
+
+    worker.onMessage((message) => {
+      if (!message || message.id !== id) return;
+      if (message.type === 'derive-master-key:success') {
+        finish(() => {
+          resolve({
+            masterKey: base64ToBytes(message.masterKey),
+            kdfSalt: message.kdfSalt,
+            kdfParams: message.kdfParams,
+          });
+        });
+        return;
+      }
+
+      finish(() => {
+        reject(new Error(message.message || '密钥派生失败'));
+      });
+    });
+
+    worker.onError?.((error) => {
+      finish(() => {
+        reject(new Error(error.errMsg || error.message || 'Worker 密钥派生失败'));
+      });
+    });
+
+    worker.postMessage({
+      id,
+      type: 'derive-master-key',
+      password,
+      salt,
+      params,
+    });
+  });
+}
+
+async function deriveMasterKeyPreferWorker(
+  password: string,
+  salt: string,
+  params: ReturnType<typeof deriveMasterKeyByPassword>['kdfParams'],
+) {
+  const wxRuntime = getWxWorkerRuntime();
+  if (!wxRuntime?.createWorker) {
+    return deriveMasterKeyByPassword(password, salt, params);
+  }
+  return deriveMasterKeyInWorker(password, salt, params);
+}
+
+export async function unlockVaultWithMasterPassword(
+  masterPassword: string,
+  progress?: {
+    beforeDerive?: () => void;
+    afterDerive?: () => void;
+    afterDecrypt?: () => void;
+  },
+) {
   const bundle = vaultSession.getKeyBundle();
   if (!bundle) {
     throw new Error('缺少密钥包，请重新登录');
   }
 
-  const derived = deriveMasterKeyByPassword(
+  progress?.beforeDerive?.();
+  const derived = await deriveMasterKeyPreferWorker(
     masterPassword,
     bundle.kdfSalt,
     bundle.kdfParams,
   );
+  progress?.afterDerive?.();
   const vaultKey = await decryptVaultKey(bundle.encryptedVaultKey, derived.masterKey);
+  progress?.afterDecrypt?.();
   vaultSession.setVaultKey(vaultKey);
   return vaultKey;
 }

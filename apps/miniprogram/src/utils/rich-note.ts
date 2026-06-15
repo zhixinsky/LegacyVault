@@ -39,6 +39,23 @@ export function plainTextToRichNotePayload(content: string): RichNotePayload {
   };
 }
 
+export function getRichNoteFeatureSummary(payload: RichNotePayload) {
+  const features = new Set<string>();
+  walkNodes(payload.doc, (node) => {
+    const type = node.type ?? '';
+    if (['table', 'tableRow', 'tableCell', 'tableHeader'].includes(type)) features.add('表格');
+    if (type === 'codeBlock') features.add('代码块');
+    if (type === 'encryptedImage') features.add('图片');
+    if (type === 'encryptedVideo') features.add('视频');
+    if (type === 'encryptedAttachment') features.add('附件');
+  });
+  return Array.from(features);
+}
+
+export function isMiniEditableRichNote(payload: RichNotePayload) {
+  return getRichNoteFeatureSummary(payload).length === 0;
+}
+
 function collectText(node: RichNoteNode, parts: string[]) {
   if (node.type === 'encryptedImage') {
     parts.push(`[加密图片${formatAssetName(node)}]\n`);
@@ -61,6 +78,14 @@ function collectText(node: RichNoteNode, parts: string[]) {
   }
   if (['paragraph', 'heading', 'blockquote', 'codeBlock', 'listItem', 'taskItem'].includes(node.type ?? '')) {
     parts.push('\n');
+  }
+}
+
+function walkNodes(node: RichNoteNode | undefined, visit: (node: RichNoteNode) => void) {
+  if (!node) return;
+  visit(node);
+  for (const child of node.content ?? []) {
+    walkNodes(child, visit);
   }
 }
 
