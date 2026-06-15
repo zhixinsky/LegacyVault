@@ -33,7 +33,12 @@ const tabs = [
 
 function normalizePath(path = '') {
   const purePath = String(path).split('?')[0].replace(/^\/+/, '');
-  return `/${purePath}`;
+  return purePath ? `/${purePath}` : '';
+}
+
+function getSelectedIndex(path, list) {
+  const currentPath = normalizePath(path);
+  return list.findIndex((item) => normalizePath(item.pagePath) === currentPath);
 }
 
 Component({
@@ -61,24 +66,23 @@ Component({
   },
 
   methods: {
-    syncCurrentPath() {
+    syncCurrentPath(path) {
       const app = getApp();
       const hidden = app.globalData && app.globalData.tabBarHidden;
       const pages = getCurrentPages();
       const current = pages[pages.length - 1];
-      const currentPath = normalizePath(current && current.route);
-      const selected = this.data.list.findIndex(
-        (item) => normalizePath(item.pagePath) === currentPath,
-      );
+      const currentPath = normalizePath(path || (current && current.route));
+      const selected = getSelectedIndex(currentPath, this.data.list);
       this.setData({
-        selected: selected >= 0 ? selected : 0,
+        selected: selected >= 0 ? selected : this.data.selected,
         visible: !hidden,
       });
     },
 
-    syncCurrentPathLater() {
-      setTimeout(() => this.syncCurrentPath(), 80);
-      setTimeout(() => this.syncCurrentPath(), 220);
+    syncCurrentPathLater(path) {
+      setTimeout(() => this.syncCurrentPath(path), 50);
+      setTimeout(() => this.syncCurrentPath(path), 180);
+      setTimeout(() => this.syncCurrentPath(path), 360);
     },
 
     switchTab(event) {
@@ -92,7 +96,8 @@ Component({
       this.setData({ selected: Number(index), visible: true });
       wx.switchTab({
         url: item.pagePath,
-        success: () => this.syncCurrentPathLater(),
+        success: () => this.syncCurrentPathLater(item.pagePath),
+        fail: () => this.syncCurrentPathLater(),
       });
     },
   },

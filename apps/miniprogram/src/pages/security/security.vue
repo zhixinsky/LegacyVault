@@ -19,6 +19,7 @@ import {
   setupMfa,
   setupRecoveryKey,
 } from '@/utils/services';
+import { syncCustomTabBar } from '@/utils/tabbar';
 
 const logs = ref<Array<{ id: string; actionLabel: string; riskLevel: string; time: string }>>([]);
 const notifications = ref<
@@ -42,6 +43,7 @@ const mfaLoading = ref(false);
 const recoveryLoading = ref(false);
 
 onShow(async () => {
+  syncCustomTabBar('/pages/security/security');
   await Promise.all([loadLogs(), loadProfile(), loadDevices(), loadNotifications()]);
 });
 

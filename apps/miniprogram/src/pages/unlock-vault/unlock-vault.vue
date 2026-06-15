@@ -33,6 +33,9 @@ const heroBackgroundUrl =
   'cloud://prod-d4g8kpg7x92d55205.7072-prod-d4g8kpg7x92d55205-1441616383/img/bg.webp';
 
 const progressSteps = ['验证主密码', '生成解密密钥', '解锁保险箱', '加载数据'];
+const MASTER_UNLOCK_PROGRESS_DURATION_MS = 118000;
+const MASTER_UNLOCK_PROGRESS_MAX = 96;
+const MASTER_UNLOCK_PROGRESS_TICK_MS = 650;
 
 function waitForPaint(delay = 100) {
   return new Promise<void>((resolve) => {
@@ -54,28 +57,68 @@ async function rampProgress(stages: Array<{ value: number; step: number; text: s
   }
 }
 
-async function animateWhilePending<T>(task: Promise<T>, target: number, step: number, text: string) {
-  let settled = false;
-  const guardedTask = task.finally(() => {
-    settled = true;
-  });
-
-  while (!settled && progress.value < target) {
-    const nextValue = progress.value < 70 ? progress.value + 2 : progress.value + 1;
-    setProgress(Math.min(target, nextValue), step, text);
-    await nextTick();
-    await waitForPaint(progress.value < 70 ? 90 : progress.value < 90 ? 150 : 420);
-  }
-
-  return guardedTask;
-}
-
 function resetUnlockProgress() {
   progress.value = 0;
   currentStep.value = 0;
   unlockStatus.value = 'idle';
   statusText.value = '正在执行安全计算...';
   errorMessage.value = '';
+}
+
+function getTimedUnlockStep(value: number) {
+  if (value < 24) return 0;
+  if (value < 70) return 1;
+  if (value < 90) return 2;
+  return 3;
+}
+
+function getTimedUnlockText(value: number) {
+  if (value < 24) return '正在验证本地密钥包...';
+  if (value < 70) return '正在进行本地安全计算，主密码不会上传服务器...';
+  if (value < 90) return '正在解密保险箱密钥，请保持页面打开...';
+  return '安全计算即将完成，正在准备加载数据...';
+}
+
+function getTimedUnlockProgress(startedAt: number) {
+  const elapsed = Date.now() - startedAt;
+  const ratio = Math.min(elapsed / MASTER_UNLOCK_PROGRESS_DURATION_MS, 1);
+  const easedRatio = ratio < 0.82 ? ratio * 0.92 : 0.7544 + (ratio - 0.82) * 1.364;
+  return Math.min(
+    MASTER_UNLOCK_PROGRESS_MAX,
+    Math.max(10, Math.floor(10 + easedRatio * (MASTER_UNLOCK_PROGRESS_MAX - 10))),
+  );
+}
+
+async function animateMasterUnlock<T>(task: Promise<T>) {
+  let settled = false;
+  let failed = false;
+  let result: T | undefined;
+  let failure: unknown;
+
+  task
+    .then((value) => {
+      result = value;
+    })
+    .catch((error) => {
+      failed = true;
+      failure = error;
+    })
+    .finally(() => {
+      settled = true;
+    });
+
+  const startedAt = Date.now();
+  while (Date.now() - startedAt < MASTER_UNLOCK_PROGRESS_DURATION_MS || !settled) {
+    if (failed) throw failure;
+
+    const value = getTimedUnlockProgress(startedAt);
+    setProgress(value, getTimedUnlockStep(value), getTimedUnlockText(value));
+    await nextTick();
+    await waitForPaint(MASTER_UNLOCK_PROGRESS_TICK_MS);
+  }
+
+  if (failed) throw failure;
+  return result as T;
 }
 
 function switchMode(mode: UnlockMode) {
@@ -155,16 +198,18 @@ async function handleUnlock() {
         { value: 34, step: 1, text: '即将生成解密密钥...', delay: 160 },
       ]);
       const unlockTask = unlockVaultWithMasterPassword(masterPassword.value, {
-        beforeDerive: () => setProgress(40, 1, '正在进行本地安全计算，主密码不会上传服务器...'),
-        afterDerive: () => setProgress(96, 2, '解密密钥已生成，正在打开保险箱...'),
-        afterDecrypt: () => setProgress(98, 3, '密钥解密成功，正在加载数据...'),
+        beforeDerive: () => {
+          statusText.value = '正在进行本地安全计算，主密码不会上传服务器...';
+        },
+        afterDerive: () => {
+          statusText.value = '解密密钥已生成，正在等待安全进度完成...';
+        },
+        afterDecrypt: () => {
+          statusText.value = '密钥解密成功，正在准备加载数据...';
+        },
       });
-      await animateWhilePending(
-        unlockTask,
-        99,
-        1,
-        '正在进行本地安全计算，主密码不会上传服务器...',
-      );
+      await animateMasterUnlock(unlockTask);
+      setProgress(98, 3, '密钥解密成功，正在加载数据...');
     } else {
       await rampProgress([
         { value: 20, step: 0, text: '正在检查恢复密钥包...', delay: 120 },
@@ -340,7 +385,7 @@ function goLogin() {
               {{ unlockStatus === 'error' ? '解锁失败' : '正在本地解锁保险箱' }}
             </text>
             <text class="progress-subtitle">
-              {{ unlockStatus === 'error' ? errorMessage : '验证主密码并解密密钥，过程可能需要几秒，请稍候。' }}
+              {{ unlockStatus === 'error' ? errorMessage : '验证主密码并解密密钥，过程约 2 分钟，请保持页面打开。' }}
             </text>
           </view>
           <text class="secure-badge">零知识加密</text>

@@ -9,12 +9,16 @@ import {
   writeDecryptedPreviewFile,
 } from '@/utils/crypto-flow';
 import { createAlbum, listAlbums, listFiles, updateAlbum, type AlbumItem } from '@/utils/services';
+import { syncCustomTabBar } from '@/utils/tabbar';
 
 const albums = ref<Array<{ id: string; name: string; count: number; coverPath?: string }>>([]);
 const newAlbumName = ref('');
 const loading = ref(false);
 
-onShow(loadAlbums);
+onShow(() => {
+  syncCustomTabBar('/pages/albums/albums');
+  loadAlbums();
+});
 
 async function loadAlbums() {
   loading.value = true;
