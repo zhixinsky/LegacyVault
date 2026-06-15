@@ -1,7 +1,7 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { NotificationChannel, NotificationStatus } from '@prisma/client';
-import nodemailer from 'nodemailer';
+import * as nodemailer from 'nodemailer';
 import { PrismaService } from '../../prisma/prisma.service';
 import { EmaySmsService } from './emay/emay-sms.service';
 import { sendAliyunSms } from './sms-delivery.util';

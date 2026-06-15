@@ -1,5 +1,11 @@
 <view class="tab-shell">
-  <view class="tab-capsule">
+  <view
+    class="tab-capsule {{dragging ? 'dragging' : ''}}"
+    bindtouchstart="handleTouchStart"
+    bindtouchmove="handleTouchMove"
+    bindtouchend="handleTouchEnd"
+    bindtouchcancel="handleTouchCancel"
+  >
     <view
       wx:for="{{list}}"
       wx:for-index="idx"

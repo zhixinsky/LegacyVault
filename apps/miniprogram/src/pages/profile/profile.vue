@@ -9,6 +9,7 @@ import {
   sendEmailLoginCode,
   unbindWechat,
 } from '@/utils/services';
+import { setCustomTabBarSelected } from '@/utils/tabbar';
 
 const loading = ref(false);
 const wxLoading = ref(false);
@@ -29,6 +30,7 @@ const emailCountdown = ref(0);
 let emailCountdownTimer: ReturnType<typeof setInterval> | null = null;
 
 onShow(() => {
+  setCustomTabBarSelected(4);
   loadProfile();
 });
 

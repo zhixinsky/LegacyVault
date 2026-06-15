@@ -9,6 +9,7 @@ import {
   listTrustedContacts,
   listVaultItems,
 } from '@/utils/services';
+import { setCustomTabBarSelected } from '@/utils/tabbar';
 
 const loading = ref(false);
 const totalItems = ref(0);
@@ -56,6 +57,7 @@ const tools = [
 ];
 
 onShow(() => {
+  setCustomTabBarSelected(0);
   void guardAndLoad();
 });
 

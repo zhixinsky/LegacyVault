@@ -33,6 +33,12 @@ const heroBackgroundUrl =
   'cloud://prod-d4g8kpg7x92d55205.7072-prod-d4g8kpg7x92d55205-1441616383/img/bg.webp';
 
 const progressSteps = ['验证主密码', '生成解密密钥', '解锁保险箱', '加载数据'];
+const securityTips = [
+  '平台和开发者均无法查看您的内容',
+  '当前登录会话仅首次需要输入主密码',
+  '解锁成功后，本次会话内切换页面无需重复解锁',
+  '所有密钥计算都在本地完成，主密码不会离开设备',
+];
 const MASTER_UNLOCK_PROGRESS_DURATION_MS = 118000;
 const MASTER_UNLOCK_PROGRESS_MAX = 96;
 const MASTER_UNLOCK_PROGRESS_TICK_MS = 650;
@@ -358,17 +364,25 @@ function goLogin() {
         </view>
       </template>
 
-      <view class="session-tip">
-        <text>仅首次进入当前登录会话需要输入主密码解密保险箱；解锁成功后，本次会话内切换页面不会重复要求主密码。</text>
-      </view>
-
       <view class="security-card">
         <view class="security-icon">
           <image src="/static/icons/login/shield-solid.svg" mode="aspectFit" />
         </view>
         <view class="security-copy">
           <text class="security-title">主密码不会上传服务器</text>
-          <text class="security-text">平台和开发者均无法查看您的内容</text>
+          <swiper
+            class="security-swiper"
+            vertical
+            autoplay
+            circular
+            :interval="3200"
+            :duration="360"
+            :disable-touch="true"
+          >
+            <swiper-item v-for="tip in securityTips" :key="tip" class="security-slide">
+              <text class="security-text">{{ tip }}</text>
+            </swiper-item>
+          </swiper>
         </view>
       </view>
 
@@ -591,17 +605,6 @@ button::after {
   line-height: 1.55;
 }
 
-.session-tip {
-  margin-top: 28rpx;
-  padding: 20rpx 22rpx;
-  border: 1rpx solid rgba(30, 77, 255, 0.14);
-  border-radius: 18rpx;
-  background: rgba(238, 246, 255, 0.88);
-  color: #1e4dff;
-  font-size: 24rpx;
-  line-height: 1.55;
-}
-
 .security-card {
   display: flex;
   align-items: center;
@@ -640,12 +643,23 @@ button::after {
   font-weight: 700;
 }
 
+.security-swiper {
+  width: 100%;
+  height: 76rpx;
+  margin-top: 10rpx;
+}
+
+.security-slide {
+  display: flex;
+  align-items: center;
+}
+
 .security-text {
   display: block;
-  margin-top: 10rpx;
   color: #64748b;
-  font-size: 25rpx;
-  line-height: 1.45;
+  font-size: 24rpx;
+  line-height: 1.48;
+  white-space: normal;
 }
 
 .primary-button {

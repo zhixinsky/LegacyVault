@@ -9,12 +9,14 @@ import {
   writeDecryptedPreviewFile,
 } from '@/utils/crypto-flow';
 import { createAlbum, listAlbums, listFiles, updateAlbum, type AlbumItem } from '@/utils/services';
+import { setCustomTabBarSelected } from '@/utils/tabbar';
 
 const albums = ref<Array<{ id: string; name: string; count: number; coverPath?: string }>>([]);
 const newAlbumName = ref('');
 const loading = ref(false);
 
 onShow(() => {
+  setCustomTabBarSelected(2);
   loadAlbums();
 });
 

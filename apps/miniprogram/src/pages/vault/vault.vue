@@ -12,6 +12,7 @@ import {
   type VaultFileItem,
   type VaultItem,
 } from '@/utils/services';
+import { setCustomTabBarSelected } from '@/utils/tabbar';
 
 type CategoryKey = 'password' | 'account' | 'note' | 'file' | 'album';
 
@@ -90,6 +91,7 @@ const secondaryTools = [
 ];
 
 onShow(() => {
+  setCustomTabBarSelected(1);
   loadDashboard();
   heartbeat().catch(() => undefined);
 });

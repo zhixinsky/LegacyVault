@@ -28,7 +28,7 @@ import { ConfigService } from '@nestjs/config';
 import { JwtService } from '@nestjs/jwt';
 
 import { AuditRiskLevel, Prisma, UserStatus } from '@prisma/client';
-import nodemailer from 'nodemailer';
+import * as nodemailer from 'nodemailer';
 
 import { PrismaService } from '../../prisma/prisma.service';
 
