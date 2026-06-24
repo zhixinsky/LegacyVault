@@ -20,6 +20,7 @@ import {
 } from '@vaultpass/crypto';
 import type { FileMetadata } from '@vaultpass/types';
 import { vaultSession } from '@/utils/api';
+import { friendlyErrorMessage } from '@/utils/errors';
 
 export const MAX_ORIGINAL_UPLOAD_BYTES = 180 * 1024 * 1024;
 
@@ -92,9 +93,13 @@ export async function unlockVaultWithMasterPassword(masterPassword: string) {
     bundle.kdfSalt,
     bundle.kdfParams,
   );
-  const vaultKey = await decryptVaultKey(bundle.encryptedVaultKey, derived.masterKey);
-  vaultSession.setVaultKey(vaultKey);
-  return vaultKey;
+  try {
+    const vaultKey = await decryptVaultKey(bundle.encryptedVaultKey, derived.masterKey);
+    vaultSession.setVaultKey(vaultKey);
+    return vaultKey;
+  } catch (error) {
+    throw new Error(friendlyErrorMessage(error, '主密码错误，请重新输入'));
+  }
 }
 
 export async function encryptVaultItemPayload(payload: object, title: string) {
@@ -223,18 +228,26 @@ export async function unlockVaultWithRecoveryKey(
       recoverySalt,
       vaultSession.getKeyBundle()?.kdfParams,
     );
-    const vaultKey = await decryptVaultKey(encryptedVaultKeyByRecovery, derived.masterKey);
-    vaultSession.setVaultKey(vaultKey);
-    return vaultKey;
+    try {
+      const vaultKey = await decryptVaultKey(encryptedVaultKeyByRecovery, derived.masterKey);
+      vaultSession.setVaultKey(vaultKey);
+      return vaultKey;
+    } catch (error) {
+      throw new Error(friendlyErrorMessage(error, '恢复密钥不正确，请重新输入'));
+    }
   }
 
-  const payload = await decryptJson<{ vaultKey: string }>(
-    encryptedVaultKeyByRecovery,
-    deriveRecoveryKey(recoveryPassphrase),
-  );
-  const vaultKey = base64ToBytes(payload.vaultKey);
-  vaultSession.setVaultKey(vaultKey);
-  return vaultKey;
+  try {
+    const payload = await decryptJson<{ vaultKey: string }>(
+      encryptedVaultKeyByRecovery,
+      deriveRecoveryKey(recoveryPassphrase),
+    );
+    const vaultKey = base64ToBytes(payload.vaultKey);
+    vaultSession.setVaultKey(vaultKey);
+    return vaultKey;
+  } catch (error) {
+    throw new Error(friendlyErrorMessage(error, '恢复密钥不正确，请重新输入'));
+  }
 }
 
 export async function buildRecoveredMasterPasswordPayload(

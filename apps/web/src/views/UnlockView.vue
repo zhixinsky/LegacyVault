@@ -4,6 +4,7 @@ import { useRouter } from 'vue-router';
 import { VButton } from '@vaultpass/ui';
 import { vaultSession } from '@/utils/api';
 import { buildRecoveredMasterPasswordPayload, unlockVaultWithMasterPassword } from '@/utils/crypto-flow';
+import { friendlyErrorMessage } from '@/utils/errors';
 import { getProfile, heartbeat, recoverMasterPassword } from '@/utils/services';
 
 const router = useRouter();
@@ -111,7 +112,7 @@ async function handleUnlock() {
 
   } catch (err) {
 
-    error.value = err instanceof Error ? err.message : '解锁失败';
+    error.value = friendlyErrorMessage(err, '解锁失败');
 
   } finally {
 

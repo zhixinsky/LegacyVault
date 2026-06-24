@@ -78,7 +78,7 @@
     },
     {
       "path": "pages/upload-image/upload-image",
-      "style": { "navigationBarTitleText": "上传图片" }
+      "style": { "navigationBarTitleText": "上传照片/视频" }
     },
     {
       "path": "pages/upload-video/upload-video",

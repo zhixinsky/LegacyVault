@@ -147,11 +147,17 @@ function formatRelativeTime(value: string) {
 }
 
 function go(url: string, tab = false) {
-  if (tab) {
+  if (tab || isTabBarPage(url)) {
     uni.switchTab({ url });
     return;
   }
   uni.navigateTo({ url });
+}
+
+function isTabBarPage(url: string) {
+  return ['/pages/index/index', '/pages/vault/vault', '/pages/albums/albums', '/pages/security/security', '/pages/profile/profile'].includes(
+    url.split('?')[0],
+  );
 }
 </script>
 

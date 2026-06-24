@@ -1,6 +1,7 @@
 import type { EncryptedVaultKeyBundle } from '@vaultpass/types';
 import { decryptJson, zeroize } from '@vaultpass/crypto';
 import { API_BASE_URL, DEVICE_ID_STORAGE_KEY, TOKEN_STORAGE_KEY } from '@/config';
+import { friendlyErrorMessage } from '@/utils/errors';
 
 export function getDeviceId() {
   let deviceId = sessionStorage.getItem(DEVICE_ID_STORAGE_KEY);
@@ -88,12 +89,12 @@ export async function request<T>(options: RequestOptions): Promise<T> {
   });
 
   if (!response.ok) {
-    throw new Error(`请求失败 (${response.status})`);
+    throw new Error(friendlyErrorMessage(`HTTP ${response.status}`, `请求失败 (${response.status})`));
   }
 
   const envelope = (await response.json()) as ApiEnvelope<T>;
   if (envelope.code !== 0) {
-    throw new Error(envelope.message || '请求失败');
+    throw new Error(friendlyErrorMessage(envelope.message, '请求失败'));
   }
 
   return envelope.data;
@@ -109,12 +110,12 @@ export async function publicRequest<T>(options: RequestOptions): Promise<T> {
   });
 
   if (!response.ok) {
-    throw new Error(`请求失败 (${response.status})`);
+    throw new Error(friendlyErrorMessage(`HTTP ${response.status}`, `请求失败 (${response.status})`));
   }
 
   const envelope = (await response.json()) as ApiEnvelope<T>;
   if (envelope.code !== 0) {
-    throw new Error(envelope.message || '请求失败');
+    throw new Error(friendlyErrorMessage(envelope.message, '请求失败'));
   }
 
   return envelope.data;
@@ -298,7 +299,7 @@ export async function uploadEncryptedFile(file: Blob, formData: Record<string, s
     let message = `上传失败 (${response.status})`;
     try {
       const payload = (await response.json()) as { message?: string };
-      if (payload.message) message = payload.message;
+      if (payload.message) message = friendlyErrorMessage(payload.message, message);
     } catch {
       // keep status-only message when the server returns a non-JSON 500 page.
     }
@@ -307,7 +308,7 @@ export async function uploadEncryptedFile(file: Blob, formData: Record<string, s
 
   const envelope = (await response.json()) as ApiEnvelope<unknown>;
   if (envelope.code !== 0) {
-    throw new Error(envelope.message || '上传失败');
+    throw new Error(friendlyErrorMessage(envelope.message, '上传失败'));
   }
 
   return envelope.data;

@@ -2,7 +2,7 @@
 import { friendlyErrorMessage } from '@/utils/errors';
 import { onShow } from '@dcloudio/uni-app';
 import { ref } from 'vue';
-import { decryptText } from '@/utils/api';
+import { decryptVaultTitle } from '@/utils/crypto-flow';
 import { deleteVaultItem, listVaultItems } from '@/utils/services';
 import { ensureVaultAccess, isLoggedIn, isVaultUnlocked } from '@/utils/access';
 
@@ -22,8 +22,11 @@ async function loadNotes() {
     const result = await listVaultItems('note');
     const rows = [];
     for (const item of result.items) {
-      const title = await decryptText(item.titleCiphertext);
-      rows.push({ id: item.id, title });
+      try {
+        rows.push({ id: item.id, title: await decryptVaultTitle(item.titleCiphertext) });
+      } catch {
+        rows.push({ id: item.id, title: '加密笔记' });
+      }
     }
     notes.value = rows;
   } catch (error) {
@@ -53,8 +56,12 @@ async function handleDelete(id: string) {
     content: '将移入回收站',
     success: async (res) => {
       if (!res.confirm) return;
-      await deleteVaultItem(id);
-      await loadNotes();
+      try {
+        await deleteVaultItem(id);
+        await loadNotes();
+      } catch (error) {
+        uni.showToast({ title: friendlyErrorMessage(error, '删除失败'), icon: 'none' });
+      }
     },
   });
 }

@@ -73,7 +73,7 @@ async function loadAlbums() {
         if (recent.length >= 6) break;
         recent.push({
           id: file.id,
-          previewPath: isImageFile(file) ? await loadPreviewPath(file) : undefined,
+          previewPath: isImageFile(file) ? await tryLoadPreviewPath(file) : undefined,
           time: formatRelativeTime(file.createdAt),
           isVideo: isVideoFile(file),
         });
@@ -130,6 +130,14 @@ async function loadPreviewPath(file: { id: string; encryptedFileKey: string; mim
   const decrypted = await decryptDownloadedBuffer(buffer, file.encryptedFileKey);
   const ext = extensionFromMime(file.mimeType || 'image/jpeg');
   return await writeDecryptedPreviewFile(decrypted, ext);
+}
+
+async function tryLoadPreviewPath(file: { id: string; encryptedFileKey: string; mimeType?: string }) {
+  try {
+    return await loadPreviewPath(file);
+  } catch {
+    return undefined;
+  }
 }
 
 function formatRelativeTime(value: string) {

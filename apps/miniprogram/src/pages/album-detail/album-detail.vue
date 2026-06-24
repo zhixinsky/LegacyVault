@@ -132,9 +132,8 @@ function setupThumbObservers() {
   });
 }
 
-function goUpload(kind: 'image' | 'video') {
-  const page = kind === 'image' ? 'upload-image' : 'upload-video';
-  uni.navigateTo({ url: `/pages/${page}/${page}?albumId=${albumId.value}` });
+function goUpload() {
+  uni.navigateTo({ url: `/pages/upload-image/upload-image?albumId=${albumId.value}` });
 }
 
 async function handlePreview(file: VaultFileItem) {
@@ -267,8 +266,7 @@ function fileLabel(file: VaultFileItem) {
       <view class="section-header">
         <text class="section-title">{{ albumName }}</text>
         <view class="links">
-          <text class="link" @tap="goUpload('image')">上传图片</text>
-          <text class="link" @tap="goUpload('video')">上传视频</text>
+          <text class="link" @tap="goUpload">上传照片/视频</text>
           <text class="link" @tap="toggleSelectMode">{{ selectMode ? '取消多选' : '批量选择' }}</text>
           <text
             v-if="selectMode && selectedIds.length > 0"

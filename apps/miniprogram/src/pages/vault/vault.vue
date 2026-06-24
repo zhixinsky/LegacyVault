@@ -314,7 +314,17 @@ function navigate(url: string) {
     uni.showToast({ title: '当前已在分类页', icon: 'none' });
     return;
   }
+  if (isTabBarPage(url)) {
+    uni.switchTab({ url });
+    return;
+  }
   uni.navigateTo({ url });
+}
+
+function isTabBarPage(url: string) {
+  return ['/pages/index/index', '/pages/vault/vault', '/pages/albums/albums', '/pages/security/security', '/pages/profile/profile'].includes(
+    url.split('?')[0],
+  );
 }
 
 function goSearch() {
