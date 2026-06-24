@@ -23,6 +23,7 @@ import {
 import { DEFAULT_KDF_PARAMS } from '@vaultpass/crypto';
 import type { FileMetadata } from '@vaultpass/types';
 import { vaultSession } from './api';
+import { friendlyErrorMessage } from './errors';
 
 type DerivedMasterKeyMessage =
   | {
@@ -168,7 +169,7 @@ async function deriveMasterKeyInWorker(
 
     worker.onError?.((error) => {
       finish(() => {
-        reject(new Error(error.errMsg || error.message || 'Worker 密钥派生失败'));
+        reject(new Error(friendlyErrorMessage(error.errMsg || error.message, 'Worker 密钥派生失败')));
       });
     });
 
@@ -214,10 +215,14 @@ export async function unlockVaultWithMasterPassword(
     bundle.kdfParams,
   );
   progress?.afterDerive?.();
-  const vaultKey = await decryptVaultKey(bundle.encryptedVaultKey, derived.masterKey);
-  progress?.afterDecrypt?.();
-  vaultSession.setVaultKey(vaultKey);
-  return vaultKey;
+  try {
+    const vaultKey = await decryptVaultKey(bundle.encryptedVaultKey, derived.masterKey);
+    progress?.afterDecrypt?.();
+    vaultSession.setVaultKey(vaultKey);
+    return vaultKey;
+  } catch (error) {
+    throw new Error(friendlyErrorMessage(error, '主密码错误，请重新输入'));
+  }
 }
 
 export async function encryptVaultItemPayload(payload: object, title: string) {
@@ -229,13 +234,21 @@ export async function encryptVaultItemPayload(payload: object, title: string) {
 
 export async function decryptVaultTitle(titleCiphertext: string) {
   const vaultKey = vaultSession.requireVaultKey();
-  const data = await decryptJson<{ title: string }>(titleCiphertext, vaultKey);
-  return data.title;
+  try {
+    const data = await decryptJson<{ title: string }>(titleCiphertext, vaultKey);
+    return data.title;
+  } catch (error) {
+    throw new Error(friendlyErrorMessage(error, '标题解密失败'));
+  }
 }
 
 export async function decryptVaultPayload<T extends object>(encryptedPayload: string) {
   const vaultKey = vaultSession.requireVaultKey();
-  return decryptJson<T>(encryptedPayload, vaultKey);
+  try {
+    return await decryptJson<T>(encryptedPayload, vaultKey);
+  } catch (error) {
+    throw new Error(friendlyErrorMessage(error, '内容解密失败'));
+  }
 }
 
 export async function encryptField(value: string) {
@@ -253,7 +266,11 @@ export async function decryptFileMetadata(ciphertext?: string | null): Promise<F
     return {};
   }
   const vaultKey = vaultSession.requireVaultKey();
-  return decryptJson<FileMetadata>(ciphertext, vaultKey);
+  try {
+    return await decryptJson<FileMetadata>(ciphertext, vaultKey);
+  } catch (error) {
+    throw new Error(friendlyErrorMessage(error, '文件信息解密失败'));
+  }
 }
 
 function guessMimeTypeFromPath(filePath: string, fallback = 'application/octet-stream') {
@@ -324,7 +341,7 @@ export function writeDecryptedPreviewFile(data: Uint8Array, ext: string) {
       filePath,
       data: bytes.buffer,
       success: () => resolve(filePath),
-      fail: (error) => reject(new Error(error.errMsg || '写入预览文件失败')),
+      fail: (error) => reject(new Error(friendlyErrorMessage(error.errMsg, '写入预览文件失败'))),
     });
   });
 }
@@ -336,7 +353,7 @@ function readFileAsUint8Array(filePath: string): Promise<Uint8Array> {
       success: (res) => {
         resolve(new Uint8Array(res.data as ArrayBuffer));
       },
-      fail: (error) => reject(new Error(error.errMsg || '读取文件失败')),
+      fail: (error) => reject(new Error(friendlyErrorMessage(error.errMsg, '读取文件失败'))),
     });
   });
 }
@@ -348,7 +365,7 @@ function writeUtf8File(filePath: string, content: string): Promise<void> {
       data: content,
       encoding: 'utf8',
       success: () => resolve(),
-      fail: (error) => reject(new Error(error.errMsg || '写入临时文件失败')),
+      fail: (error) => reject(new Error(friendlyErrorMessage(error.errMsg, '写入临时文件失败'))),
     });
   });
 }
@@ -387,8 +404,12 @@ export async function decryptStoredFile(
   vaultKey: Uint8Array,
 ) {
   const { decryptFile } = await import('@vaultpass/crypto');
-  const payload = await decryptJson<{ key: string }>(encryptedFileKey, vaultKey);
-  return decryptFile(encryptedContent, base64ToBytes(payload.key));
+  try {
+    const payload = await decryptJson<{ key: string }>(encryptedFileKey, vaultKey);
+    return await decryptFile(encryptedContent, base64ToBytes(payload.key));
+  } catch (error) {
+    throw new Error(friendlyErrorMessage(error, '文件解密失败'));
+  }
 }
 
 function deriveRecoveryKey(recoveryPassphrase: string) {
@@ -419,18 +440,26 @@ export async function unlockVaultWithRecoveryKey(
       recoverySalt,
       vaultSession.getKeyBundle()?.kdfParams,
     );
-    const vaultKey = await decryptVaultKey(encryptedVaultKeyByRecovery, derived.masterKey);
-    vaultSession.setVaultKey(vaultKey);
-    return vaultKey;
+    try {
+      const vaultKey = await decryptVaultKey(encryptedVaultKeyByRecovery, derived.masterKey);
+      vaultSession.setVaultKey(vaultKey);
+      return vaultKey;
+    } catch (error) {
+      throw new Error(friendlyErrorMessage(error, '恢复密钥不正确，请重新输入'));
+    }
   }
 
-  const payload = await decryptJson<{ vaultKey: string }>(
-    encryptedVaultKeyByRecovery,
-    deriveRecoveryKey(recoveryPassphrase),
-  );
-  const vaultKey = base64ToBytes(payload.vaultKey);
-  vaultSession.setVaultKey(vaultKey);
-  return vaultKey;
+  try {
+    const payload = await decryptJson<{ vaultKey: string }>(
+      encryptedVaultKeyByRecovery,
+      deriveRecoveryKey(recoveryPassphrase),
+    );
+    const vaultKey = base64ToBytes(payload.vaultKey);
+    vaultSession.setVaultKey(vaultKey);
+    return vaultKey;
+  } catch (error) {
+    throw new Error(friendlyErrorMessage(error, '恢复密钥不正确，请重新输入'));
+  }
 }
 
 export async function buildRecoveredMasterPasswordPayload(
@@ -462,9 +491,13 @@ export async function buildRecoveredMasterPasswordPayload(
 }
 
 export async function decryptContactVaultKey(encryptedVaultKeyForContact: string, answer: string) {
-  const payload = await decryptJson<{ vaultKey: string }>(
-    encryptedVaultKeyForContact,
-    deriveContactKey(answer),
-  );
-  return base64ToBytes(payload.vaultKey);
+  try {
+    const payload = await decryptJson<{ vaultKey: string }>(
+      encryptedVaultKeyForContact,
+      deriveContactKey(answer),
+    );
+    return base64ToBytes(payload.vaultKey);
+  } catch (error) {
+    throw new Error(friendlyErrorMessage(error, '验证答案不正确，请重新输入'));
+  }
 }

@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { friendlyErrorMessage } from '@/utils/errors';
 import { onLoad } from '@dcloudio/uni-app';
 import { ref } from 'vue';
 import { prepareEncryptedUpload } from '@/utils/crypto-flow';
@@ -35,7 +36,7 @@ async function chooseAndUpload() {
         setTimeout(() => uni.navigateBack(), 500);
       } catch (error) {
         uni.showToast({
-          title: error instanceof Error ? error.message : '上传失败',
+          title: friendlyErrorMessage(error, '上传失败'),
           icon: 'none',
         });
       } finally {

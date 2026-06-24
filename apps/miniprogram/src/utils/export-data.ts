@@ -1,6 +1,7 @@
 import { MANAGED_VAULT_TYPES } from '@vaultpass/types';
 import { decryptText } from '@/utils/api';
 import { decryptVaultPayload, decryptVaultTitle } from '@/utils/crypto-flow';
+import { friendlyErrorMessage } from '@/utils/errors';
 import {
   getInheritanceRule,
   listAlbums,
@@ -100,7 +101,7 @@ export function saveExportJsonToLocal(data: unknown) {
       data: content,
       encoding: 'utf8',
       success: () => resolve(filePath),
-      fail: (error) => reject(new Error(error.errMsg || '写入文件失败')),
+      fail: (error) => reject(new Error(friendlyErrorMessage(error.errMsg, '写入文件失败'))),
     });
   });
 }

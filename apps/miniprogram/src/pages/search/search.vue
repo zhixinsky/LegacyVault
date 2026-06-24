@@ -1,12 +1,15 @@
 <script setup lang="ts">
+import { friendlyErrorMessage } from '@/utils/errors';
 import { ref } from 'vue';
 import { searchVaultItems, type VaultSearchResult } from '@/utils/vault-search';
+import { ensureVaultAccess } from '@/utils/access';
 
 const query = ref('');
 const results = ref<VaultSearchResult[]>([]);
 const loading = ref(false);
 
 async function handleSearch() {
+  if (!(await ensureVaultAccess('登录并解锁后即可搜索保险箱内容。'))) return;
   const trimmed = query.value.trim();
   if (!trimmed) {
     results.value = [];
@@ -18,7 +21,7 @@ async function handleSearch() {
     results.value = await searchVaultItems(trimmed);
   } catch (error) {
     uni.showToast({
-      title: error instanceof Error ? error.message : '搜索失败',
+      title: friendlyErrorMessage(error, '搜索失败'),
       icon: 'none',
     });
   } finally {
@@ -26,7 +29,8 @@ async function handleSearch() {
   }
 }
 
-function openResult(item: VaultSearchResult) {
+async function openResult(item: VaultSearchResult) {
+  if (!(await ensureVaultAccess('登录并解锁后即可查看搜索结果。'))) return;
   uni.navigateTo({ url: item.route });
 }
 </script>

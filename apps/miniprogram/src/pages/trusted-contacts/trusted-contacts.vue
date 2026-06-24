@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { friendlyErrorMessage } from '@/utils/errors';
 import { onShow } from '@dcloudio/uni-app';
 import { ref } from 'vue';
 import { decryptText } from '@/utils/api';
@@ -8,6 +9,7 @@ import {
   encryptField,
 } from '@/utils/crypto-flow';
 import { addContactChallenge, createTrustedContact, listTrustedContacts } from '@/utils/services';
+import { ensureVaultAccess, isLoggedIn, isVaultUnlocked } from '@/utils/access';
 
 const contacts = ref<Array<{ id: string; name: string; scope: string }>>([]);
 const name = ref('');
@@ -29,6 +31,11 @@ const scopeIndex = ref(1);
 onShow(loadContacts);
 
 async function loadContacts() {
+  if (!isLoggedIn() || !isVaultUnlocked()) {
+    contacts.value = [];
+    loading.value = false;
+    return;
+  }
   loading.value = true;
   try {
     const result = await listTrustedContacts();
@@ -45,7 +52,7 @@ async function loadContacts() {
     contacts.value = parsed;
   } catch (error) {
     uni.showToast({
-      title: error instanceof Error ? error.message : '加载失败',
+      title: friendlyErrorMessage(error, '加载失败'),
       icon: 'none',
     });
   } finally {
@@ -54,6 +61,7 @@ async function loadContacts() {
 }
 
 async function handleAdd() {
+  if (!(await ensureVaultAccess('登录并解锁后即可添加安全联系人。'))) return;
   if (!name.value || !phone.value) {
     uni.showToast({ title: '请填写姓名和手机号', icon: 'none' });
     return;
@@ -104,7 +112,7 @@ async function handleAdd() {
     loadContacts();
   } catch (error) {
     uni.showToast({
-      title: error instanceof Error ? error.message : '添加失败',
+      title: friendlyErrorMessage(error, '添加失败'),
       icon: 'none',
     });
   }

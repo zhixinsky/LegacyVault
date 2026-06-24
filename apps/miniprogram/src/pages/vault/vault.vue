@@ -1,8 +1,10 @@
 <script setup lang="ts">
+import { friendlyErrorMessage } from '@/utils/errors';
 import { onShow } from '@dcloudio/uni-app';
-import { ref } from 'vue';
+import { computed, ref } from 'vue';
 import { decryptText } from '@/utils/api';
 import { decryptFileMetadata, decryptVaultTitle } from '@/utils/crypto-flow';
+import { ensureVaultAccess, isLoggedIn, isVaultUnlocked } from '@/utils/access';
 import {
   heartbeat,
   listAlbums,
@@ -39,7 +41,7 @@ const categories = ref<VaultCategory[]>([
   {
     key: 'password',
     title: '账号密码',
-    desc: '登录密码、网站账号、应用口令',
+    desc: '网站、应用登录',
     count: 0,
     url: '/pages/passwords/passwords',
     icon: '/static/icons/vault-menu/password.svg',
@@ -48,7 +50,7 @@ const categories = ref<VaultCategory[]>([
   {
     key: 'account',
     title: '敏感账户',
-    desc: '银行、股票、邮箱、服务器、证件',
+    desc: '银行卡、证件等',
     count: 0,
     url: '/pages/accounts-hub/accounts-hub',
     icon: '/static/icons/vault-menu/accounts.svg',
@@ -57,7 +59,7 @@ const categories = ref<VaultCategory[]>([
   {
     key: 'note',
     title: '私密笔记',
-    desc: '文字、代码、表格与附件预览',
+    desc: '富文本内容',
     count: 0,
     url: '/pages/notes/notes',
     icon: '/static/icons/vault-menu/notes.svg',
@@ -66,7 +68,7 @@ const categories = ref<VaultCategory[]>([
   {
     key: 'file',
     title: '文件管理',
-    desc: '文档、压缩包、加密附件',
+    desc: '文档、压缩包等',
     count: 0,
     url: '/pages/upload-file/upload-file',
     icon: '/static/icons/vault-menu/files.svg',
@@ -85,15 +87,27 @@ const categories = ref<VaultCategory[]>([
 const recentItems = ref<RecentItem[]>([]);
 
 const secondaryTools = [
-  { title: '搜索', desc: '查找所有保险箱内容', url: '/pages/search/search', icon: '/static/icons/vault-menu/search.svg' },
-  { title: '回收站', desc: '恢复或永久删除条目', url: '/pages/recycle-bin/recycle-bin', icon: '/static/icons/vault-menu/recycle.svg' },
-  { title: '数据导出', desc: '导出本地解密资料', url: '/pages/export/export', icon: '/static/icons/vault-menu/export.svg' },
+  { title: '搜索', url: '/pages/search/search', icon: '/static/icons/vault-menu/search.svg', tone: 'blue' },
+  { title: '标签管理', url: '/pages/search/search', icon: '/static/icons/vault-menu/accounts.svg', tone: 'green' },
+  { title: '分类管理', url: '/pages/vault/vault', icon: '/static/icons/vault-menu/files.svg', tone: 'violet' },
+  { title: '导出备份', url: '/pages/export/export', icon: '/static/icons/vault-menu/export.svg', tone: 'orange' },
+  { title: '回收站', url: '/pages/recycle-bin/recycle-bin', icon: '/static/icons/vault-menu/recycle.svg', tone: 'gray' },
 ];
+
+const totalProtectedAssets = computed(() =>
+  categories.value.reduce((sum, item) => sum + item.count, 0),
+);
 
 onShow(() => {
   setCustomTabBarSelected(1);
-  loadDashboard();
-  heartbeat().catch(() => undefined);
+  if (!isLoggedIn() || !isVaultUnlocked()) {
+    loading.value = false;
+    recentItems.value = [];
+    updateCategoryCounts({ password: 0, account: 0, note: 0, file: 0, album: 0 });
+    return;
+  }
+  void loadDashboard();
+  void heartbeat().catch(() => undefined);
 });
 
 async function loadDashboard() {
@@ -147,7 +161,7 @@ async function loadDashboard() {
     );
   } catch (error) {
     uni.showToast({
-      title: error instanceof Error ? error.message : '保险箱加载失败',
+      title: friendlyErrorMessage(error, '保险箱加载失败'),
       icon: 'none',
     });
   } finally {
@@ -296,6 +310,10 @@ function formatTime(value: string) {
 }
 
 function navigate(url: string) {
+  if (url === '/pages/vault/vault') {
+    uni.showToast({ title: '当前已在分类页', icon: 'none' });
+    return;
+  }
   uni.navigateTo({ url });
 }
 
@@ -303,11 +321,20 @@ function goSearch() {
   uni.navigateTo({ url: '/pages/search/search' });
 }
 
-function showFilter() {
-  uni.showToast({ title: '可在搜索页按类型筛选', icon: 'none' });
+function getCategoryUnit(item: VaultCategory) {
+  return item.key === 'album' ? '张' : '项';
 }
 
-function showCreateSheet() {
+function getRecentTone(type: string) {
+  if (type === '账号密码') return 'blue';
+  if (type === '文件管理') return 'orange';
+  if (type === '相册管理') return 'rose';
+  if (type === '私密笔记') return 'violet';
+  return 'green';
+}
+
+async function showCreateSheet() {
+  if (!(await ensureVaultAccess('登录并解锁保险箱后即可新增加密内容。'))) return;
   const items = ['账号密码', '敏感账户', '私密笔记', '上传文件', '上传图片/视频'];
   uni.showActionSheet({
     itemList: items,
@@ -328,90 +355,103 @@ function showCreateSheet() {
 
 <template>
   <view class="vault-page tabbar-page">
-    <view class="hero-card">
-      <view>
-        <text class="eyebrow">VaultPass</text>
-        <text class="page-title">数字保险箱</text>
-        <text class="page-subtitle">账号密码、敏感账户、笔记、文件和相册均在本地解密后访问。</text>
-      </view>
-      <view class="hero-lock">
-        <image src="/static/icons/vault-menu/password.svg" mode="aspectFit" />
+    <view class="vault-header">
+      <text class="vault-title">保险箱</text>
+      <view class="asset-summary">
+        <text>已保护</text>
+        <text class="asset-number">{{ totalProtectedAssets }}</text>
+        <text>项资产</text>
       </view>
     </view>
 
-    <view class="search-card" @tap="goSearch">
-      <image class="search-symbol" src="/static/icons/vault-menu/search.svg" mode="aspectFit" />
-      <text class="search-placeholder">搜索账号、笔记、文件、标签</text>
-      <view class="filter-button" @tap.stop="showFilter">
-        <text>筛选</text>
+    <view class="search-row">
+      <view class="search-card" @tap="goSearch">
+        <image class="search-symbol" src="/static/icons/vault-menu/search.svg" mode="aspectFit" />
+        <text class="search-placeholder">搜索账号、文件、笔记、相册等</text>
       </view>
+      <button class="add-fab" @tap="showCreateSheet">
+        <view class="plus-mark" />
+      </button>
     </view>
 
-    <button class="add-button" @tap="showCreateSheet">新增保险箱内容</button>
-
-    <view class="section">
-      <view class="section-header">
-        <text class="section-title">保险箱功能</text>
-        <text v-if="loading" class="section-note">同步中</text>
-      </view>
-      <view class="category-grid">
-        <view
-          v-for="item in categories"
-          :key="item.key"
-          class="category-card"
-          @tap="navigate(item.url)"
-        >
-          <view class="menu-icon" :class="item.tone">
+    <view class="category-grid">
+      <view
+        v-for="item in categories"
+        :key="item.key"
+        class="category-card"
+        :class="[item.tone, { wide: item.key === 'album' }]"
+        @tap="navigate(item.url)"
+      >
+        <view class="category-icon-wrap">
+          <view class="menu-icon">
             <image :src="item.icon" mode="aspectFit" />
           </view>
-          <view class="category-copy">
-            <text class="category-title">{{ item.title }}</text>
-            <text class="category-desc">{{ item.desc }}</text>
-            <text class="category-count">{{ item.count }}项</text>
-          </view>
         </view>
+        <view class="category-copy">
+          <text class="category-title">{{ item.title }}</text>
+          <view class="category-count-line">
+            <text class="category-count">{{ item.count }}</text>
+            <text class="category-unit">{{ getCategoryUnit(item) }}</text>
+          </view>
+          <text class="category-desc">{{ item.desc }}</text>
+        </view>
+        <text class="card-arrow">›</text>
       </view>
     </view>
 
-    <view class="panel">
+    <view class="section-block">
       <view class="section-header">
-        <text class="section-title">最近保存</text>
-        <text class="section-note">标题预览</text>
+        <text class="section-title">最近新增</text>
+        <text class="section-link" @tap="goSearch">查看全部 ›</text>
       </view>
-      <view v-if="loading" class="empty">正在同步保险箱内容...</view>
-      <view v-else-if="recentItems.length === 0" class="empty">暂无加密资料</view>
-      <view v-else>
+      <view class="recent-panel">
+        <view v-if="loading" class="empty">正在同步保险箱内容...</view>
+        <view v-else-if="recentItems.length === 0" class="empty">暂无加密资料</view>
         <view
+          v-else
           v-for="item in recentItems"
           :key="`${item.type}-${item.id}`"
           class="recent-row"
           @tap="navigate(item.url)"
         >
-          <view>
-            <text class="recent-title">{{ item.title }}</text>
-            <text class="recent-meta">{{ item.type }} · {{ formatTime(item.updatedAt) }}</text>
+          <view class="recent-icon" :class="getRecentTone(item.type)">
+            <image
+              :src="item.type === '文件管理'
+                ? '/static/icons/vault-menu/files.svg'
+                : item.type === '相册管理'
+                  ? '/static/icons/vault-menu/albums.svg'
+                  : item.type === '私密笔记'
+                    ? '/static/icons/vault-menu/notes.svg'
+                    : '/static/icons/vault-menu/password.svg'"
+              mode="aspectFit"
+            />
           </view>
-          <text class="row-arrow">›</text>
+          <view class="recent-copy">
+            <text class="recent-title">{{ item.title }}</text>
+            <text class="recent-tag" :class="getRecentTone(item.type)">{{ item.type }}</text>
+          </view>
+          <text class="recent-time">{{ formatTime(item.updatedAt) }}</text>
+          <text class="recent-more">•••</text>
         </view>
       </view>
     </view>
 
-    <view class="panel">
-      <view class="section-header compact">
-        <text class="section-title">辅助工具</text>
+    <view class="section-block tools-block">
+      <view class="section-header">
+        <text class="section-title">更多工具</text>
       </view>
-      <view
-        v-for="tool in secondaryTools"
-        :key="tool.url"
-        class="tool-row"
-        @tap="navigate(tool.url)"
-      >
-        <image class="tool-icon" :src="tool.icon" mode="aspectFit" />
-        <view class="tool-copy">
+      <view class="tools-grid">
+        <view
+          v-for="tool in secondaryTools"
+          :key="tool.title"
+          class="tool-card"
+          @tap="navigate(tool.url)"
+        >
+          <view class="tool-icon-wrap" :class="tool.tone">
+            <image class="tool-icon" :src="tool.icon" mode="aspectFit" />
+          </view>
           <text class="tool-title">{{ tool.title }}</text>
-          <text class="tool-desc">{{ tool.desc }}</text>
         </view>
-        <text class="row-arrow">›</text>
       </view>
     </view>
   </view>
@@ -446,7 +486,7 @@ function showCreateSheet() {
   display: block;
   color: #1e4dff;
   font-size: 22rpx;
-  font-weight: 800;
+  font-weight: 700;
   letter-spacing: 1rpx;
 }
 
@@ -454,7 +494,7 @@ function showCreateSheet() {
   display: block;
   margin-top: 10rpx;
   font-size: 46rpx;
-  font-weight: 900;
+  font-weight: 700;
   color: #0b1f4d;
 }
 
@@ -516,17 +556,21 @@ function showCreateSheet() {
   background: #eef3ff;
   color: #1e4dff;
   font-size: 22rpx;
-  font-weight: 800;
+  font-weight: 700;
 }
 
 .add-button {
+  display: flex;
+  align-items: center;
+  justify-content: center;
   height: 92rpx;
   margin: 28rpx 0 32rpx;
   border-radius: 26rpx;
   background: linear-gradient(135deg, #377dff, #1e4dff);
   color: #fff;
   font-size: 28rpx;
-  font-weight: 800;
+  font-weight: 700;
+  line-height: 1;
   box-shadow: 0 16rpx 32rpx rgba(30, 77, 255, 0.24);
 }
 
@@ -547,7 +591,7 @@ function showCreateSheet() {
 
 .section-title {
   font-size: 30rpx;
-  font-weight: 800;
+  font-weight: 700;
   color: #0b1f4d;
 }
 
@@ -601,7 +645,7 @@ function showCreateSheet() {
 .category-title {
   display: block;
   font-size: 29rpx;
-  font-weight: 800;
+  font-weight: 700;
   color: #0b1f4d;
 }
 
@@ -617,7 +661,8 @@ function showCreateSheet() {
 
 .category-count {
   display: block;
-  margin-top: 18rpx;
+  flex: 0 0 auto;
+  margin-left: 18rpx;
   font-size: 24rpx;
   font-weight: 700;
   color: #1e4dff;
@@ -675,5 +720,613 @@ function showCreateSheet() {
   text-align: center;
   font-size: 26rpx;
   color: #9aa5b5;
+}
+
+/* Refined compact mobile style */
+.vault-page {
+  padding: 108rpx 24rpx 132rpx;
+  background: #f6f8fb;
+}
+
+.hero-card,
+.search-card,
+.category-card,
+.panel {
+  border-radius: 24rpx;
+  border-color: #e6ebf2;
+  background: #fff;
+  box-shadow: 0 8rpx 24rpx rgba(15, 23, 42, 0.04);
+}
+
+.hero-card {
+  min-height: 152rpx;
+  padding: 26rpx;
+  border-color: transparent;
+  background:
+    linear-gradient(135deg, rgba(255, 255, 255, 0.94), rgba(245, 248, 255, 0.96)),
+    #f6f8fb;
+  box-shadow: 0 10rpx 28rpx rgba(15, 23, 42, 0.05);
+}
+
+.eyebrow {
+  font-size: 20rpx;
+  font-weight: 600;
+}
+
+.page-title {
+  margin-top: 8rpx;
+  font-size: 36rpx;
+  font-weight: 650;
+}
+
+.page-subtitle {
+  max-width: 500rpx;
+  margin-top: 8rpx;
+  font-size: 23rpx;
+  line-height: 1.45;
+}
+
+.hero-lock {
+  width: 68rpx;
+  height: 68rpx;
+  flex-basis: 68rpx;
+  border-radius: 20rpx;
+  background: rgba(255, 255, 255, 0.72);
+  box-shadow: none;
+}
+
+.hero-lock image {
+  width: 46rpx;
+  height: 46rpx;
+}
+
+.search-card {
+  height: 76rpx;
+  margin-top: 18rpx;
+  padding: 0 18rpx;
+}
+
+.search-symbol {
+  width: 36rpx;
+  height: 36rpx;
+}
+
+.search-placeholder {
+  font-size: 24rpx;
+}
+
+.filter-button {
+  min-width: 76rpx;
+  height: 44rpx;
+  border-radius: 14rpx;
+  font-size: 21rpx;
+  font-weight: 600;
+}
+
+.add-button {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 80rpx;
+  margin: 18rpx 0 22rpx;
+  border-radius: 20rpx;
+  font-size: 26rpx;
+  font-weight: 650;
+  line-height: 1;
+  box-shadow: 0 10rpx 22rpx rgba(30, 77, 255, 0.18);
+}
+
+.section {
+  margin-top: 22rpx;
+}
+
+.section-header {
+  margin-bottom: 14rpx;
+}
+
+.section-title {
+  font-size: 28rpx;
+  font-weight: 650;
+}
+
+.section-note {
+  font-size: 22rpx;
+}
+
+.category-grid {
+  display: flex;
+  flex-direction: column;
+  gap: 12rpx;
+}
+
+.category-card,
+.category-card:first-child {
+  display: flex;
+  align-items: center;
+  min-height: 104rpx;
+  padding: 20rpx;
+}
+
+.menu-icon {
+  width: 50rpx;
+  height: 50rpx;
+  flex: 0 0 50rpx;
+  margin: 0 18rpx 0 0;
+  border-radius: 16rpx;
+}
+
+.menu-icon image {
+  width: 36rpx;
+  height: 36rpx;
+}
+
+.category-copy {
+  min-width: 0;
+  flex: 1;
+}
+
+.category-title,
+.recent-title,
+.tool-title {
+  font-size: 26rpx;
+  font-weight: 600;
+}
+
+.category-desc,
+.recent-meta,
+.tool-desc {
+  margin-top: 5rpx;
+  font-size: 21rpx;
+}
+
+.category-count {
+  margin-left: 14rpx;
+  font-size: 22rpx;
+  font-weight: 600;
+}
+
+.panel {
+  margin-top: 18rpx;
+  padding: 24rpx;
+}
+
+.recent-row,
+.tool-row {
+  min-height: 74rpx;
+}
+
+.tool-icon {
+  width: 42rpx;
+  height: 42rpx;
+  margin-right: 14rpx;
+}
+
+.row-arrow {
+  font-size: 34rpx;
+}
+
+.empty {
+  padding: 40rpx 0;
+  font-size: 24rpx;
+}
+
+/* Screenshot-inspired vault overview */
+.vault-page {
+  padding: 112rpx 36rpx 156rpx;
+  background:
+    radial-gradient(circle at 50% -8%, rgba(30, 77, 255, 0.1), transparent 42%),
+    linear-gradient(180deg, #f7faff 0%, #f3f7ff 46%, #f8fafc 100%);
+}
+
+.vault-header {
+  padding: 18rpx 6rpx 0;
+}
+
+.vault-title {
+  display: block;
+  color: #0b1f4d;
+  font-size: 54rpx;
+  font-weight: 650;
+  line-height: 1.1;
+}
+
+.asset-summary {
+  display: flex;
+  align-items: baseline;
+  gap: 10rpx;
+  margin-top: 16rpx;
+  color: #65728a;
+  font-size: 25rpx;
+}
+
+.asset-number {
+  color: #1e63ff;
+  font-size: 32rpx;
+  font-weight: 700;
+}
+
+.search-row {
+  display: flex;
+  align-items: center;
+  gap: 26rpx;
+  margin-top: 34rpx;
+  height: 76rpx;
+}
+
+.search-card {
+  display: flex;
+  flex: 1;
+  height: 76rpx;
+  min-height: 76rpx;
+  max-height: 76rpx;
+  align-items: center;
+  margin: 0;
+  padding: 0 24rpx;
+  border: none;
+  border-radius: 999rpx;
+  background: rgba(255, 255, 255, 0.92);
+  box-shadow:
+    inset 0 0 0 1rpx rgba(226, 232, 240, 0.7),
+    0 16rpx 38rpx rgba(28, 55, 100, 0.06);
+  box-sizing: border-box;
+}
+
+.search-symbol {
+  width: 36rpx;
+  height: 36rpx;
+  opacity: 0.62;
+}
+
+.search-placeholder {
+  flex: 1;
+  margin-left: 18rpx;
+  color: #9aa5b8;
+  font-size: 27rpx;
+}
+
+.add-fab {
+  display: flex;
+  width: 76rpx;
+  height: 76rpx;
+  flex: 0 0 76rpx;
+  align-items: center;
+  justify-content: center;
+  margin: 0;
+  padding: 0;
+  border-radius: 50%;
+  background: linear-gradient(145deg, #3f7cff, #1157f2);
+  color: #fff;
+  box-shadow: 0 16rpx 28rpx rgba(30, 77, 255, 0.25);
+}
+
+.add-fab::after {
+  border: none;
+}
+
+.plus-mark {
+  position: relative;
+  width: 34rpx;
+  height: 34rpx;
+}
+
+.plus-mark::before,
+.plus-mark::after {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  display: block;
+  width: 34rpx;
+  height: 5rpx;
+  border-radius: 999rpx;
+  background: #fff;
+  content: '';
+  transform: translate(-50%, -50%);
+}
+
+.plus-mark::after {
+  transform: translate(-50%, -50%) rotate(90deg);
+}
+
+.category-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 24rpx;
+  margin-top: 42rpx;
+}
+
+.category-card,
+.category-card:first-child {
+  position: relative;
+  display: flex;
+  flex-direction: row;
+  grid-column: auto;
+  min-height: 194rpx;
+  align-items: center;
+  padding: 28rpx 24rpx;
+  overflow: hidden;
+  border: none;
+  border-radius: 28rpx;
+  background: rgba(255, 255, 255, 0.88);
+  box-shadow:
+    inset 0 0 0 1rpx rgba(255, 255, 255, 0.72),
+    0 18rpx 44rpx rgba(28, 55, 100, 0.07);
+  box-sizing: border-box;
+}
+
+.category-card.wide {
+  grid-column: span 2;
+  min-height: 174rpx;
+}
+
+.category-card.blue {
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.94), rgba(240, 246, 255, 0.9));
+}
+
+.category-card.green {
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.94), rgba(239, 252, 246, 0.92));
+}
+
+.category-card.violet {
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.94), rgba(248, 243, 255, 0.92));
+}
+
+.category-card.cyan {
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.94), rgba(255, 247, 237, 0.92));
+}
+
+.category-card.rose {
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.95), rgba(255, 241, 246, 0.92));
+}
+
+.category-icon-wrap {
+  display: flex;
+  width: 92rpx;
+  height: 92rpx;
+  flex: 0 0 92rpx;
+  align-items: center;
+  justify-content: center;
+  margin-right: 18rpx;
+  border-radius: 50%;
+}
+
+.category-card.blue .category-icon-wrap { background: #eef4ff; }
+.category-card.green .category-icon-wrap { background: #eafaf2; }
+.category-card.violet .category-icon-wrap { background: #f5efff; }
+.category-card.cyan .category-icon-wrap { background: #fff4e5; }
+.category-card.rose .category-icon-wrap { background: #fff0f5; }
+
+.menu-icon {
+  display: flex;
+  width: 72rpx;
+  height: 72rpx;
+  align-items: center;
+  justify-content: center;
+  margin: 0;
+  border-radius: 0;
+  background: transparent;
+}
+
+.menu-icon image {
+  width: 72rpx;
+  height: 72rpx;
+}
+
+.category-copy {
+  min-width: 0;
+  flex: 1;
+  padding-right: 10rpx;
+}
+
+.category-title {
+  display: block;
+  color: #101f3f;
+  font-size: 29rpx;
+  font-weight: 650;
+  line-height: 1.18;
+}
+
+.category-count-line {
+  display: flex;
+  align-items: baseline;
+  gap: 8rpx;
+  margin-top: 18rpx;
+}
+
+.category-count {
+  margin: 0;
+  color: #102447;
+  font-size: 44rpx;
+  font-weight: 650;
+  line-height: 1;
+}
+
+.category-unit {
+  color: #64748b;
+  font-size: 22rpx;
+}
+
+.category-desc {
+  display: block;
+  margin-top: 12rpx;
+  overflow: hidden;
+  color: #64748b;
+  font-size: 23rpx;
+  line-height: 1.35;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.card-arrow {
+  position: absolute;
+  right: 16rpx;
+  top: 50%;
+  transform: translateY(-50%);
+  color: #7d899c;
+  font-size: 44rpx;
+  font-weight: 300;
+}
+
+.section-block {
+  margin-top: 48rpx;
+}
+
+.section-header {
+  margin: 0 10rpx 22rpx;
+}
+
+.section-title {
+  color: #0b1f4d;
+  font-size: 29rpx;
+  font-weight: 650;
+}
+
+.section-link {
+  color: #8a96aa;
+  font-size: 24rpx;
+}
+
+.recent-panel {
+  overflow: hidden;
+  border-radius: 28rpx;
+  background: rgba(255, 255, 255, 0.9);
+  box-shadow: 0 18rpx 44rpx rgba(28, 55, 100, 0.07);
+}
+
+.recent-row {
+  display: flex;
+  min-height: 96rpx;
+  align-items: center;
+  padding: 0 28rpx;
+  border-bottom: 1rpx solid #edf1f7;
+}
+
+.recent-row:last-child {
+  border-bottom: none;
+}
+
+.recent-icon {
+  display: flex;
+  width: 52rpx;
+  height: 52rpx;
+  flex: 0 0 52rpx;
+  align-items: center;
+  justify-content: center;
+  margin-right: 22rpx;
+  border-radius: 14rpx;
+}
+
+.recent-icon image {
+  width: 36rpx;
+  height: 36rpx;
+}
+
+.recent-icon.blue { background: #eaf2ff; }
+.recent-icon.green { background: #eafaf2; }
+.recent-icon.violet { background: #f4edff; }
+.recent-icon.orange { background: #fff4e5; }
+.recent-icon.rose { background: #fff0f5; }
+
+.recent-copy {
+  display: flex;
+  min-width: 0;
+  flex: 1;
+  align-items: center;
+  gap: 14rpx;
+}
+
+.recent-title {
+  display: block;
+  max-width: 250rpx;
+  overflow: hidden;
+  color: #102447;
+  font-size: 27rpx;
+  font-weight: 620;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.recent-tag {
+  flex: 0 0 auto;
+  padding: 5rpx 12rpx;
+  border-radius: 10rpx;
+  font-size: 20rpx;
+  line-height: 1;
+}
+
+.recent-tag.blue { background: #edf4ff; color: #1e63ff; }
+.recent-tag.green { background: #edfdf5; color: #12a166; }
+.recent-tag.violet { background: #f4efff; color: #7c3aed; }
+.recent-tag.orange { background: #fff4e5; color: #f08a12; }
+.recent-tag.rose { background: #fff0f5; color: #db2777; }
+
+.recent-time {
+  flex: 0 0 auto;
+  margin-left: 12rpx;
+  color: #8a96aa;
+  font-size: 23rpx;
+}
+
+.recent-more {
+  flex: 0 0 auto;
+  margin-left: 22rpx;
+  color: #8d97aa;
+  font-size: 28rpx;
+  letter-spacing: 2rpx;
+}
+
+.tools-block {
+  margin-top: 42rpx;
+}
+
+.tools-grid {
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  gap: 16rpx;
+}
+
+.tool-card {
+  display: flex;
+  min-height: 128rpx;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  border-radius: 22rpx;
+  background: rgba(255, 255, 255, 0.84);
+  box-shadow: 0 14rpx 34rpx rgba(28, 55, 100, 0.06);
+}
+
+.tool-icon-wrap {
+  display: flex;
+  width: 46rpx;
+  height: 46rpx;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 16rpx;
+  border-radius: 14rpx;
+}
+
+.tool-icon-wrap.blue { background: #eaf2ff; }
+.tool-icon-wrap.green { background: #eafaf2; }
+.tool-icon-wrap.violet { background: #f4edff; }
+.tool-icon-wrap.orange { background: #fff4e5; }
+.tool-icon-wrap.gray { background: #f1f5f9; }
+
+.tool-icon {
+  width: 38rpx;
+  height: 38rpx;
+  margin: 0;
+}
+
+.tool-title {
+  color: #102447;
+  font-size: 22rpx;
+  font-weight: 600;
+  line-height: 1;
+}
+
+.empty {
+  padding: 48rpx 0;
+  color: #8a96aa;
+  font-size: 24rpx;
 }
 </style>

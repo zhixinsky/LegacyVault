@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { friendlyErrorMessage } from '@/utils/errors';
 import { onShow } from '@dcloudio/uni-app';
 import { ref } from 'vue';
 import { getInheritanceStageLabel, getInheritanceStatusLabel } from '@vaultpass/types';
@@ -11,6 +12,7 @@ import {
   saveInheritanceRule,
   type InheritanceEventItem,
 } from '@/utils/services';
+import { ensureLoggedIn, isLoggedIn } from '@/utils/access';
 
 const inactiveYears = ref(3);
 const gracePeriodMonths = ref(12);
@@ -31,6 +33,12 @@ const frequencyIndex = ref(0);
 onShow(loadRule);
 
 async function loadRule() {
+  if (!isLoggedIn()) {
+    activeEvent.value = null;
+    eventHistory.value = [];
+    loading.value = false;
+    return;
+  }
   loading.value = true;
   try {
     const [rule, event, history] = await Promise.all([
@@ -52,7 +60,7 @@ async function loadRule() {
     frequencyIndex.value = index >= 0 ? index : 0;
   } catch (error) {
     uni.showToast({
-      title: error instanceof Error ? error.message : '加载失败',
+      title: friendlyErrorMessage(error, '加载失败'),
       icon: 'none',
     });
   } finally {
@@ -61,18 +69,20 @@ async function loadRule() {
 }
 
 async function handleDisable() {
+  if (!ensureLoggedIn('登录后即可关闭数字遗产规则。')) return;
   try {
     await disableInheritanceRule();
     uni.showToast({ title: '数字遗产已关闭', icon: 'success' });
   } catch (error) {
     uni.showToast({
-      title: error instanceof Error ? error.message : '关闭失败',
+      title: friendlyErrorMessage(error, '关闭失败'),
       icon: 'none',
     });
   }
 }
 
 async function handleSave() {
+  if (!ensureLoggedIn('登录后即可保存数字遗产规则。')) return;
   saving.value = true;
   try {
     await saveInheritanceRule({
@@ -85,7 +95,7 @@ async function handleSave() {
     uni.showToast({ title: '规则已保存', icon: 'success' });
   } catch (error) {
     uni.showToast({
-      title: error instanceof Error ? error.message : '保存失败',
+      title: friendlyErrorMessage(error, '保存失败'),
       icon: 'none',
     });
   } finally {
@@ -111,6 +121,7 @@ function onMultiContactChange(event: unknown) {
 }
 
 async function handleRespond(action: 'cancel' | 'pause' | 'allow_takeover') {
+  if (!ensureLoggedIn('登录后即可处理数字遗产交接流程。')) return;
   if (!activeEvent.value) return;
 
   try {
@@ -124,7 +135,7 @@ async function handleRespond(action: 'cancel' | 'pause' | 'allow_takeover') {
     uni.showToast({ title: messages[action], icon: 'success' });
   } catch (error) {
     uni.showToast({
-      title: error instanceof Error ? error.message : '操作失败',
+      title: friendlyErrorMessage(error, '操作失败'),
       icon: 'none',
     });
   }

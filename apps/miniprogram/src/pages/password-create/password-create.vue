@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { friendlyErrorMessage } from '@/utils/errors';
 import { onLoad } from '@dcloudio/uni-app';
 import { ref } from 'vue';
 import { decryptVaultPayload, decryptVaultTitle, encryptVaultItemPayload } from '@/utils/crypto-flow';
@@ -41,7 +42,7 @@ async function loadItem() {
     website.value = payload.website ?? '';
     note.value = payload.note ?? '';
   } catch (error) {
-    uni.showToast({ title: error instanceof Error ? error.message : '加载失败', icon: 'none' });
+    uni.showToast({ title: friendlyErrorMessage(error, '加载失败'), icon: 'none' });
   } finally {
     loading.value = false;
   }
@@ -85,7 +86,7 @@ async function handleSave() {
     setTimeout(() => uni.navigateBack(), 500);
   } catch (error) {
     uni.showToast({
-      title: error instanceof Error ? error.message : '保存失败',
+      title: friendlyErrorMessage(error, '保存失败'),
       icon: 'none',
     });
   } finally {

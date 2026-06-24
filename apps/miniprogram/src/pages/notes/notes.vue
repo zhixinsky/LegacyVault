@@ -1,8 +1,10 @@
 <script setup lang="ts">
+import { friendlyErrorMessage } from '@/utils/errors';
 import { onShow } from '@dcloudio/uni-app';
 import { ref } from 'vue';
 import { decryptText } from '@/utils/api';
 import { deleteVaultItem, listVaultItems } from '@/utils/services';
+import { ensureVaultAccess, isLoggedIn, isVaultUnlocked } from '@/utils/access';
 
 const notes = ref<Array<{ id: string; title: string }>>([]);
 const loading = ref(false);
@@ -10,6 +12,11 @@ const loading = ref(false);
 onShow(loadNotes);
 
 async function loadNotes() {
+  if (!isLoggedIn() || !isVaultUnlocked()) {
+    notes.value = [];
+    loading.value = false;
+    return;
+  }
   loading.value = true;
   try {
     const result = await listVaultItems('note');
@@ -21,7 +28,7 @@ async function loadNotes() {
     notes.value = rows;
   } catch (error) {
     uni.showToast({
-      title: error instanceof Error ? error.message : '加载失败',
+      title: friendlyErrorMessage(error, '加载失败'),
       icon: 'none',
     });
   } finally {
@@ -29,15 +36,18 @@ async function loadNotes() {
   }
 }
 
-function goCreate() {
+async function goCreate() {
+  if (!(await ensureVaultAccess('登录并解锁后即可新增私密笔记。'))) return;
   uni.navigateTo({ url: '/pages/note-create/note-create' });
 }
 
-function goEdit(id: string) {
+async function goEdit(id: string) {
+  if (!(await ensureVaultAccess('登录并解锁后即可编辑私密笔记。'))) return;
   uni.navigateTo({ url: `/pages/note-create/note-create?id=${id}` });
 }
 
-function handleDelete(id: string) {
+async function handleDelete(id: string) {
+  if (!(await ensureVaultAccess('登录并解锁后即可删除私密笔记。'))) return;
   uni.showModal({
     title: '删除确认',
     content: '将移入回收站',

@@ -3,9 +3,9 @@
     {
       "path": "pages/index/index",
       "style": {
-        "navigationBarTitleText": "VaultPass",
-        "navigationBarBackgroundColor": "#F6F8FC",
-        "navigationBarTextStyle": "black"
+        "navigationStyle": "custom",
+        "navigationBarBackgroundColor": "#06113D",
+        "navigationBarTextStyle": "white"
       }
     },
     {
@@ -58,7 +58,11 @@
     },
     {
       "path": "pages/vault/vault",
-      "style": { "navigationBarTitleText": "保险箱" }
+      "style": {
+        "navigationStyle": "custom",
+        "navigationBarBackgroundColor": "#F6F8FB",
+        "navigationBarTextStyle": "black"
+      }
     },
     {
       "path": "pages/password-create/password-create",
@@ -66,7 +70,11 @@
     },
     {
       "path": "pages/albums/albums",
-      "style": { "navigationBarTitleText": "私密相册" }
+      "style": {
+        "navigationStyle": "custom",
+        "navigationBarBackgroundColor": "#F6F8FB",
+        "navigationBarTextStyle": "black"
+      }
     },
     {
       "path": "pages/upload-image/upload-image",
@@ -94,7 +102,11 @@
     },
     {
       "path": "pages/security/security",
-      "style": { "navigationBarTitleText": "安全中心" }
+      "style": {
+        "navigationStyle": "custom",
+        "navigationBarBackgroundColor": "#F6F8FB",
+        "navigationBarTextStyle": "black"
+      }
     },
     {
       "path": "pages/accounts-hub/accounts-hub",
@@ -114,7 +126,11 @@
     },
     {
       "path": "pages/profile/profile",
-      "style": { "navigationBarTitleText": "个人资料" }
+      "style": {
+        "navigationStyle": "custom",
+        "navigationBarBackgroundColor": "#F6F8FB",
+        "navigationBarTextStyle": "black"
+      }
     },
     {
       "path": "pages/export/export",

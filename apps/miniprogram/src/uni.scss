@@ -13,6 +13,17 @@ page {
   box-sizing: border-box;
 }
 
+.custom-page-title {
+  display: block;
+  width: 100%;
+  margin: 0 0 12rpx;
+  color: #0b1f4d;
+  font-size: 34rpx;
+  font-weight: 650;
+  line-height: 1.2;
+  text-align: center;
+}
+
 .card {
   background: #fff;
   border-radius: 20rpx;

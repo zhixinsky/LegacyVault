@@ -1,10 +1,12 @@
 <script setup lang="ts">
+import { friendlyErrorMessage } from '@/utils/errors';
 
 import { onShow } from '@dcloudio/uni-app';
 
 import { ref } from 'vue';
 
 import { decryptVaultPayload, decryptVaultTitle } from '@/utils/crypto-flow';
+import { ensureVaultAccess, isLoggedIn, isVaultUnlocked } from '@/utils/access';
 
 import { deleteVaultItem, getProfile, listVaultItems, revealVaultPassword, type VaultItem } from '@/utils/services';
 
@@ -25,6 +27,12 @@ const loading = ref(false);
 
 
 onShow(async () => {
+  if (!isLoggedIn() || !isVaultUnlocked()) {
+    items.value = [];
+    loading.value = false;
+    mfaEnabled.value = false;
+    return;
+  }
 
   try {
 
@@ -64,7 +72,7 @@ async function loadItems() {
 
   } catch (error) {
 
-    uni.showToast({ title: error instanceof Error ? error.message : '加载失败', icon: 'none' });
+    uni.showToast({ title: friendlyErrorMessage(error, '加载失败'), icon: 'none' });
 
   } finally {
 
@@ -107,12 +115,15 @@ async function parseItem(item: VaultItem) {
 
 
 function openReveal(item: (typeof items.value)[number]) {
+  void ensureVaultAccess('登录并解锁后即可查看密码。').then((ok) => {
+    if (!ok) return;
 
-  revealTarget.value = item;
+    revealTarget.value = item;
 
-  revealedPassword.value = '';
+    revealedPassword.value = '';
 
-  revealMfaCode.value = '';
+    revealMfaCode.value = '';
+  });
 
 }
 
@@ -132,7 +143,7 @@ async function handleReveal() {
 
   } catch (error) {
 
-    uni.showToast({ title: error instanceof Error ? error.message : '查看失败', icon: 'none' });
+    uni.showToast({ title: friendlyErrorMessage(error, '查看失败'), icon: 'none' });
 
   }
 
@@ -149,10 +160,13 @@ function closeReveal() {
 
 
 function goEdit(id: string) {
-  uni.navigateTo({ url: `/pages/password-create/password-create?id=${id}` });
+  void ensureVaultAccess('登录并解锁后即可编辑账号密码。').then((ok) => {
+    if (ok) uni.navigateTo({ url: `/pages/password-create/password-create?id=${id}` });
+  });
 }
 
 async function handleDelete(id: string) {
+  if (!(await ensureVaultAccess('登录并解锁后即可删除账号密码。'))) return;
 
   uni.showModal({
 

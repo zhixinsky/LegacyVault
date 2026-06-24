@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { friendlyErrorMessage } from '@/utils/errors';
 import { ref } from 'vue';
 import { vaultSession } from '@/utils/api';
 import {
@@ -98,7 +99,7 @@ async function goRegisterFromLogin(result?: Extract<AuthLoginResponse, { registe
     uni.navigateTo({ url: '/pages/create-vault-password/create-vault-password' });
   } catch (error) {
     uni.showToast({
-      title: error instanceof Error ? error.message : '注册失败',
+      title: friendlyErrorMessage(error, '注册失败'),
       icon: 'none',
     });
   } finally {
@@ -161,7 +162,7 @@ async function confirmMfaLogin() {
     completeLogin(auth);
   } catch (error) {
     uni.showToast({
-      title: error instanceof Error ? error.message : '二次验证失败',
+      title: friendlyErrorMessage(error, '二次验证失败'),
       icon: 'none',
     });
   } finally {
@@ -183,7 +184,7 @@ async function handleSendCode() {
     uni.showToast({ title: '验证码已发送', icon: 'none' });
   } catch (error) {
     uni.showToast({
-      title: error instanceof Error ? error.message : '发送失败',
+      title: friendlyErrorMessage(error, '发送失败'),
       icon: 'none',
     });
   } finally {
@@ -205,7 +206,7 @@ async function handleSendEmailCode() {
     uni.showToast({ title: '邮箱验证码已发送', icon: 'none' });
   } catch (error) {
     uni.showToast({
-      title: error instanceof Error ? error.message : '发送失败',
+      title: friendlyErrorMessage(error, '发送失败'),
       icon: 'none',
     });
   } finally {
@@ -230,7 +231,7 @@ async function handlePhoneLogin() {
     handleLoginResult(result);
   } catch (error) {
     uni.showToast({
-      title: error instanceof Error ? error.message : '登录失败',
+      title: friendlyErrorMessage(error, '登录失败'),
       icon: 'none',
     });
   } finally {
@@ -255,7 +256,7 @@ async function handlePasswordLogin() {
     handleLoginResult(result);
   } catch (error) {
     uni.showToast({
-      title: error instanceof Error ? error.message : '登录失败',
+      title: friendlyErrorMessage(error, '登录失败'),
       icon: 'none',
     });
   } finally {
@@ -280,7 +281,7 @@ async function handleEmailLogin() {
     handleLoginResult(result);
   } catch (error) {
     uni.showToast({
-      title: error instanceof Error ? error.message : '登录失败',
+      title: friendlyErrorMessage(error, '登录失败'),
       icon: 'none',
     });
   } finally {
@@ -320,7 +321,7 @@ async function handleWxLogin() {
     handleLoginResult(result);
   } catch (error) {
     uni.showToast({
-      title: error instanceof Error ? error.message : '微信登录失败',
+      title: friendlyErrorMessage(error, '微信登录失败'),
       icon: 'none',
     });
   } finally {
@@ -346,7 +347,7 @@ async function handleWechatPhoneLogin(event: { detail?: { code?: string; errMsg?
     handleLoginResult(result);
   } catch (error) {
     uni.showToast({
-      title: error instanceof Error ? error.message : '手机号快捷登录失败',
+      title: friendlyErrorMessage(error, '手机号快捷登录失败'),
       icon: 'none',
     });
   } finally {
@@ -368,11 +369,21 @@ function openLegal(type: 'user' | 'privacy') {
 function handleHeroImageError(error: unknown) {
   console.warn('[login] 背景图加载失败', heroBackgroundUrl, error);
 }
+
+function continuePreview() {
+  const pages = getCurrentPages();
+  if (pages.length > 1) {
+    uni.navigateBack();
+    return;
+  }
+  uni.switchTab({ url: '/pages/index/index' });
+}
 </script>
 
 <template>
   <view class="login-page">
     <image class="login-bg" :src="heroBackgroundUrl" mode="aspectFill" @error="handleHeroImageError" />
+    <button class="preview-back" @tap="continuePreview">继续预览</button>
     <view class="hero">
       <view class="brand-copy">
         <view class="welcome-line">
@@ -604,6 +615,26 @@ function handleHeroImageError(error: unknown) {
   width: 100vw;
   height: 100vh;
   z-index: 0;
+}
+
+.preview-back {
+  position: relative;
+  z-index: 2;
+  width: 156rpx;
+  height: 58rpx;
+  margin: 0 0 18rpx;
+  padding: 0;
+  border-radius: 999rpx;
+  background: rgba(255, 255, 255, 0.82);
+  color: #1e4dff;
+  font-size: 24rpx;
+  font-weight: 700;
+  line-height: 58rpx;
+  box-shadow: 0 10rpx 24rpx rgba(11, 31, 77, 0.08);
+}
+
+.preview-back::after {
+  border: none;
 }
 
 .hero {

@@ -1,4 +1,5 @@
 import { bytesToBase64, deriveMasterKeyByPassword, zeroize } from '@vaultpass/crypto';
+import { friendlyErrorMessage } from '../utils/errors';
 
 declare const worker:
   | {
@@ -48,7 +49,7 @@ workerApi?.onMessage((message) => {
     postMessage({
       id: message.id,
       type: 'derive-master-key:error',
-      message: error instanceof Error ? error.message : '密钥派生失败',
+      message: friendlyErrorMessage(error, '密钥派生失败'),
     });
   }
 });

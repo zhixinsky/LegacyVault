@@ -1,5 +1,13 @@
-<svg width="64" height="64" viewBox="0 0 64 64" fill="none" xmlns="http://www.w3.org/2000/svg">
-  <rect x="12" y="8" width="40" height="48" rx="12" fill="#F3E8FF"/>
-  <path d="M24 23H42M24 33H42M24 43H34" stroke="#7C3AED" stroke-width="5" stroke-linecap="round"/>
-  <path d="M18 18C18 14.686 20.686 12 24 12H42" stroke="#7C3AED" stroke-width="4" stroke-linecap="round"/>
+<svg width="96" height="96" viewBox="0 0 96 96" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="noteGradient" x1="24" y1="17" x2="74" y2="78" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#B36BFF"/>
+      <stop offset="1" stop-color="#7B3FF2"/>
+    </linearGradient>
+  </defs>
+  <path d="M27 15H56L76 35V73C76 79.6 70.6 85 64 85H27C20.4 85 15 79.6 15 73V27C15 20.4 20.4 15 27 15Z" fill="url(#noteGradient)"/>
+  <path d="M56 16V34C56 35.7 57.3 37 59 37H76" fill="white" fill-opacity=".32"/>
+  <rect x="30" y="44" width="34" height="6" rx="3" fill="white" fill-opacity=".9"/>
+  <rect x="30" y="57" width="34" height="6" rx="3" fill="white" fill-opacity=".78"/>
+  <rect x="30" y="70" width="23" height="6" rx="3" fill="white" fill-opacity=".68"/>
 </svg>

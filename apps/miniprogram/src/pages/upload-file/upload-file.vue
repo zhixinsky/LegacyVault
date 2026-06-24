@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { friendlyErrorMessage } from '@/utils/errors';
 
 import { onShow } from '@dcloudio/uni-app';
 
@@ -8,6 +9,7 @@ import { bytesToUtf8 } from '@vaultpass/crypto';
 import { downloadEncryptedFile } from '@/utils/api';
 
 import { decryptFileMetadata, decryptStoredFile, prepareEncryptedUpload } from '@/utils/crypto-flow';
+import { ensureVaultAccess, isLoggedIn, isVaultUnlocked } from '@/utils/access';
 
 import { getProfile, listFiles, uploadEncryptedFile, type VaultFileItem } from '@/utils/services';
 
@@ -33,6 +35,12 @@ const uploadDisplayName = ref('');
 
 
 onShow(async () => {
+  if (!isLoggedIn() || !isVaultUnlocked()) {
+    files.value = [];
+    loading.value = false;
+    mfaEnabled.value = false;
+    return;
+  }
 
   try {
 
@@ -80,7 +88,7 @@ async function loadFiles() {
 
     uni.showToast({
 
-      title: error instanceof Error ? error.message : '加载失败',
+      title: friendlyErrorMessage(error, '加载失败'),
 
       icon: 'none',
 
@@ -97,6 +105,7 @@ async function loadFiles() {
 
 
 async function chooseAndUpload() {
+  if (!(await ensureVaultAccess('登录并解锁后即可上传加密文件。'))) return;
 
   uni.chooseMessageFile({
 
@@ -143,7 +152,7 @@ async function chooseAndUpload() {
 
         uni.showToast({
 
-          title: error instanceof Error ? error.message : '上传失败',
+          title: friendlyErrorMessage(error, '上传失败'),
 
           icon: 'none',
 
@@ -170,6 +179,7 @@ async function chooseAndUpload() {
 
 
 async function handleDownload(file: VaultFileItem) {
+  if (!(await ensureVaultAccess('登录并解锁后即可下载解密文件。'))) return;
 
   if (mfaEnabled.value && !mfaCode.value) {
 
@@ -224,7 +234,7 @@ async function handleDownload(file: VaultFileItem) {
 
     uni.showToast({
 
-      title: error instanceof Error ? error.message : '下载失败',
+      title: friendlyErrorMessage(error, '下载失败'),
 
       icon: 'none',
 

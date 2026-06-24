@@ -3,7 +3,8 @@ import { onShow } from '@dcloudio/uni-app';
 import { ref } from 'vue';
 import { bytesToUtf8 } from '@vaultpass/crypto';
 import { contactVaultSession, downloadContactVaultFile } from '@/utils/api';
-import { decryptStoredFile } from '@/utils/crypto-flow';
+import { decryptStoredFile } from '@/utils/crypto-flow';
+import { friendlyErrorMessage } from '@/utils/errors';
 import { listContactVaultFiles, listContactVaultItems } from '@/utils/services';
 
 const scope = ref('');
@@ -49,7 +50,7 @@ async function loadData() {
     files.value = fileResult.items ?? [];
   } catch (error) {
     uni.showToast({
-      title: error instanceof Error ? error.message : '加载失败',
+      title: friendlyErrorMessage(error, '加载失败'),
       icon: 'none',
     });
   } finally {
@@ -86,7 +87,7 @@ async function handleDownload(file: {
     });
   } catch (error) {
     uni.showToast({
-      title: error instanceof Error ? error.message : '下载失败',
+      title: friendlyErrorMessage(error, '下载失败'),
       icon: 'none',
     });
   } finally {

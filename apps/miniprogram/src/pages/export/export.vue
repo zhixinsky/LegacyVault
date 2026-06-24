@@ -1,14 +1,20 @@
 <script setup lang="ts">
+import { friendlyErrorMessage } from '@/utils/errors';
 import { onShow } from '@dcloudio/uni-app';
 import { ref } from 'vue';
 import { buildVaultExportData, saveExportJsonToLocal } from '@/utils/export-data';
 import { getProfile, logDataExport, verifyMfa } from '@/utils/services';
+import { ensureVaultAccess, isLoggedIn } from '@/utils/access';
 
 const exporting = ref(false);
 const mfaEnabled = ref(false);
 const mfaCode = ref('');
 
 onShow(async () => {
+  if (!isLoggedIn()) {
+    mfaEnabled.value = false;
+    return;
+  }
   try {
     const profile = await getProfile();
     mfaEnabled.value = profile.mfaEnabled;
@@ -18,6 +24,7 @@ onShow(async () => {
 });
 
 async function handleExport() {
+  if (!(await ensureVaultAccess('登录并解锁后即可导出解密数据。'))) return;
   exporting.value = true;
   try {
     if (mfaEnabled.value) {
@@ -50,7 +57,7 @@ async function handleExport() {
     });
   } catch (error) {
     uni.showToast({
-      title: error instanceof Error ? error.message : '导出失败',
+      title: friendlyErrorMessage(error, '导出失败'),
       icon: 'none',
     });
   } finally {

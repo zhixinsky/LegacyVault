@@ -1,5 +1,6 @@
 import type { PaginatedResponse, UserProfile } from '@vaultpass/types';
 import { request, saveToken, vaultSession } from './api';
+import { friendlyErrorMessage } from './errors';
 
 export interface AuthResult {
   accessToken: string;
@@ -709,12 +710,12 @@ export function uploadEncryptedFile(options: {
             resolve(body.data);
             return;
           }
-          reject(new Error(body.message));
+          reject(new Error(friendlyErrorMessage(body.message, '上传失败')));
         } catch {
           reject(new Error('上传响应解析失败'));
         }
       },
-      fail: (error) => reject(new Error(error.errMsg || '上传失败')),
+      fail: (error) => reject(new Error(friendlyErrorMessage(error.errMsg, '上传失败'))),
     });
   });
 }

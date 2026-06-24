@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { friendlyErrorMessage } from '@/utils/errors';
 import { ref } from 'vue';
 import { contactVaultSession } from '@/utils/api';
 import { decryptContactVaultKey } from '@/utils/crypto-flow';
@@ -31,7 +32,7 @@ async function handleStart() {
     sessionId.value = result.sessionId;
     step.value = 2;
   } catch (error) {
-    uni.showToast({ title: error instanceof Error ? error.message : '令牌无效', icon: 'none' });
+    uni.showToast({ title: friendlyErrorMessage(error, '令牌无效'), icon: 'none' });
   }
 }
 
@@ -43,7 +44,7 @@ async function handleSendOtp() {
     });
     uni.showToast({ title: '验证码已发送', icon: 'success' });
   } catch (error) {
-    uni.showToast({ title: error instanceof Error ? error.message : '发送失败', icon: 'none' });
+    uni.showToast({ title: friendlyErrorMessage(error, '发送失败'), icon: 'none' });
   }
 }
 
@@ -58,7 +59,7 @@ async function handleVerifyOtp() {
     }));
     step.value = 3;
   } catch (error) {
-    uni.showToast({ title: error instanceof Error ? error.message : '验证失败', icon: 'none' });
+    uni.showToast({ title: friendlyErrorMessage(error, '验证失败'), icon: 'none' });
   }
 }
 
@@ -88,7 +89,7 @@ async function handleVerifyChallenges() {
     contactVaultSession.setSession(sessionId.value, vaultKey);
     uni.navigateTo({ url: '/pages/contact-vault/contact-vault' });
   } catch (error) {
-    uni.showToast({ title: error instanceof Error ? error.message : '验证失败', icon: 'none' });
+    uni.showToast({ title: friendlyErrorMessage(error, '验证失败'), icon: 'none' });
   }
 }
 

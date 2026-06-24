@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { friendlyErrorMessage } from '@/utils/errors';
 import { onLoad } from '@dcloudio/uni-app';
 import { ref } from 'vue';
 import { getToken } from '@/utils/api';
@@ -38,7 +39,7 @@ async function handleConfirm() {
     uni.showToast({ title: '已确认网页登录', icon: 'success' });
   } catch (error) {
     uni.showToast({
-      title: error instanceof Error ? error.message : '确认失败',
+      title: friendlyErrorMessage(error, '确认失败'),
       icon: 'none',
       duration: 3000,
     });

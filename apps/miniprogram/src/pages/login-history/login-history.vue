@@ -1,8 +1,10 @@
 <script setup lang="ts">
+import { friendlyErrorMessage } from '@/utils/errors';
 import { onShow } from '@dcloudio/uni-app';
 import { ref } from 'vue';
 import { getAuditActionLabel, isLoginAuditAction } from '@vaultpass/types';
 import { listAuditLogs } from '@/utils/services';
+import { isLoggedIn } from '@/utils/access';
 
 const logs = ref<
   Array<{
@@ -19,6 +21,11 @@ const loading = ref(false);
 onShow(loadLogs);
 
 async function loadLogs() {
+  if (!isLoggedIn()) {
+    logs.value = [];
+    loading.value = false;
+    return;
+  }
   loading.value = true;
   try {
     const result = await listAuditLogs();
@@ -38,7 +45,7 @@ async function loadLogs() {
       }));
   } catch (error) {
     uni.showToast({
-      title: error instanceof Error ? error.message : '加载失败',
+      title: friendlyErrorMessage(error, '加载失败'),
       icon: 'none',
     });
   } finally {

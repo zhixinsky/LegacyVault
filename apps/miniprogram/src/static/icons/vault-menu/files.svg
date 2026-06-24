@@ -1,5 +1,10 @@
-<svg width="64" height="64" viewBox="0 0 64 64" fill="none" xmlns="http://www.w3.org/2000/svg">
-  <path d="M16 8H38L50 20V50C50 53.314 47.314 56 44 56H16C12.686 56 10 53.314 10 50V14C10 10.686 12.686 8 16 8Z" fill="#ECFEFF"/>
-  <path d="M38 9V21H50" stroke="#0891B2" stroke-width="5" stroke-linejoin="round"/>
-  <path d="M21 32H39M21 43H34" stroke="#0891B2" stroke-width="5" stroke-linecap="round"/>
+<svg width="96" height="96" viewBox="0 0 96 96" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="folderGradient" x1="16" y1="25" x2="80" y2="78" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#FFB12B"/>
+      <stop offset="1" stop-color="#FF8A00"/>
+    </linearGradient>
+  </defs>
+  <path d="M12 35C12 29.5 16.5 25 22 25H40C43.3 25 45.7 26.4 48 29L53 35H74C79.5 35 84 39.5 84 45V71C84 76.5 79.5 81 74 81H22C16.5 81 12 76.5 12 71V35Z" fill="url(#folderGradient)"/>
+  <path d="M18 38H78C81.3 38 84 40.7 84 44V46H12V44C12 40.7 14.7 38 18 38Z" fill="white" fill-opacity=".3"/>
 </svg>

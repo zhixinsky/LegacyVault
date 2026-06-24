@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { friendlyErrorMessage } from '@/utils/errors';
 import { computed, ref } from 'vue';
 import { vaultSession } from '@/utils/api';
 import { buildCreateVaultPayload, calculatePasswordStrength } from '@/utils/crypto-flow';
@@ -61,7 +62,7 @@ async function handleCreateVault() {
     uni.navigateTo({ url: '/pages/recovery-key-display/recovery-key-display' });
   } catch (error) {
     uni.showToast({
-      title: error instanceof Error ? error.message : '保险箱创建失败',
+      title: friendlyErrorMessage(error, '保险箱创建失败'),
       icon: 'none',
     });
   } finally {

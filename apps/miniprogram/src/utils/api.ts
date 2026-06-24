@@ -8,6 +8,7 @@ import {
   WX_CLOUD_ENV_ID,
   WX_CLOUD_SERVICE,
 } from '../config';
+import { friendlyErrorMessage } from './errors';
 
 const KEY_BUNDLE_STORAGE_KEY = 'vp_key_bundle';
 const RECOVERY_BUNDLE_STORAGE_KEY = 'vp_recovery_bundle';
@@ -121,9 +122,9 @@ function extractErrorMessage(data: unknown, fallback: string) {
     error?: string;
   };
   if (Array.isArray(body.message)) {
-    return body.message.join('；') || fallback;
+    return friendlyErrorMessage(body.message.join('；'), fallback);
   }
-  return body.message || body.error || fallback;
+  return friendlyErrorMessage(body.message || body.error, fallback);
 }
 
 function unwrapResponse<T>(statusCode: number | undefined, data: unknown): T {
@@ -136,7 +137,7 @@ function unwrapResponse<T>(statusCode: number | undefined, data: unknown): T {
     if (body.code === 0) {
       return body.data;
     }
-    throw new Error(body.message || '请求失败');
+    throw new Error(friendlyErrorMessage(body.message, '请求失败'));
   }
 
   return data as T;
@@ -174,7 +175,7 @@ function callCloudContainer<T>(options: RequestOptions, token: string): Promise<
           reject(error);
         }
       },
-      fail: (error) => reject(new Error(error.errMsg || '网络错误')),
+      fail: (error) => reject(new Error(friendlyErrorMessage(error.errMsg, '网络错误'))),
     });
   });
 }
@@ -200,7 +201,7 @@ export async function request<T>(options: RequestOptions): Promise<T> {
           reject(error);
         }
       },
-      fail: (error) => reject(new Error(error.errMsg || '网络错误')),
+      fail: (error) => reject(new Error(friendlyErrorMessage(error.errMsg, '网络错误'))),
     });
   });
 }
@@ -414,8 +415,12 @@ export async function encryptText(value: string, vaultKey: Uint8Array) {
 export async function decryptText(ciphertext: string) {
   const { decryptJson } = await import('@vaultpass/crypto');
   const vaultKey = vaultSession.requireVaultKey();
-  const result = await decryptJson<{ value: string }>(ciphertext, vaultKey);
-  return result.value;
+  try {
+    const result = await decryptJson<{ value: string }>(ciphertext, vaultKey);
+    return result.value;
+  } catch (error) {
+    throw new Error(friendlyErrorMessage(error, '解密文本失败'));
+  }
 }
 
 let contactVaultKeyMemory: Uint8Array | null = null;
@@ -440,7 +445,7 @@ export function downloadEncryptedFile(fileId: string, mfaCode?: string) {
         }
         resolve(res.data as ArrayBuffer);
       },
-      fail: (error) => reject(new Error(error.errMsg || '下载失败')),
+      fail: (error) => reject(new Error(friendlyErrorMessage(error.errMsg, '下载失败'))),
     });
   });
 }
@@ -458,7 +463,7 @@ export function downloadContactVaultFile(sessionId: string, fileId: string) {
         }
         resolve(res.data as ArrayBuffer);
       },
-      fail: (error) => reject(new Error(error.errMsg || '下载失败')),
+      fail: (error) => reject(new Error(friendlyErrorMessage(error.errMsg, '下载失败'))),
     });
   });
 }

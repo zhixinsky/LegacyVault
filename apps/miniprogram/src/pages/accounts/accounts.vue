@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { friendlyErrorMessage } from '@/utils/errors';
 import { onLoad, onShow } from '@dcloudio/uni-app';
 import { computed, ref } from 'vue';
 import {
@@ -7,6 +8,7 @@ import {
   type VaultItemFieldDef,
 } from '@vaultpass/types';
 import { decryptVaultPayload, decryptVaultTitle } from '@/utils/crypto-flow';
+import { ensureVaultAccess, isLoggedIn, isVaultUnlocked } from '@/utils/access';
 import {
   deleteVaultItem,
   getProfile,
@@ -39,6 +41,12 @@ onLoad((query) => {
 
 onShow(async () => {
   if (!vaultType.value) return;
+  if (!isLoggedIn() || !isVaultUnlocked()) {
+    items.value = [];
+    loading.value = false;
+    mfaEnabled.value = false;
+    return;
+  }
   try {
     const profile = await getProfile();
     mfaEnabled.value = profile.mfaEnabled;
@@ -60,7 +68,7 @@ async function loadItems() {
     items.value = rows;
   } catch (error) {
     uni.showToast({
-      title: error instanceof Error ? error.message : '加载失败',
+      title: friendlyErrorMessage(error, '加载失败'),
       icon: 'none',
     });
   } finally {
@@ -79,11 +87,13 @@ async function parseItem(item: VaultItem, fields: VaultItemFieldDef[]) {
   }
 }
 
-function openCreate() {
+async function openCreate() {
+  if (!(await ensureVaultAccess('登录并解锁后即可新增敏感账户。'))) return;
   uni.navigateTo({ url: `/pages/account-create/account-create?type=${vaultType.value}` });
 }
 
-function openReveal(item: { id: string; title: string; encryptedPayload: string }) {
+async function openReveal(item: { id: string; title: string; encryptedPayload: string }) {
+  if (!(await ensureVaultAccess('登录并解锁后即可查看敏感信息。'))) return;
   revealItem.value = item;
   revealMfaCode.value = '';
   revealedValues.value = {};
@@ -101,7 +111,7 @@ async function handleReveal() {
     revealedValues.value = values;
   } catch (error) {
     uni.showToast({
-      title: error instanceof Error ? error.message : '查看失败',
+      title: friendlyErrorMessage(error, '查看失败'),
       icon: 'none',
     });
   }
@@ -113,6 +123,7 @@ function closeReveal() {
 }
 
 async function handleDelete(id: string) {
+  if (!(await ensureVaultAccess('登录并解锁后即可删除敏感账户。'))) return;
   uni.showModal({
     title: '确认删除',
     content: '确定删除该条目？将移入回收站',

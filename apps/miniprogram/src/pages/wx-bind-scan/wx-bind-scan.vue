@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { friendlyErrorMessage } from '@/utils/errors';
 import { onLoad } from '@dcloudio/uni-app';
 import { ref } from 'vue';
 import { confirmWxBindScan } from '@/utils/services';
@@ -33,7 +34,7 @@ async function handleConfirm() {
     uni.showToast({ title: '微信已绑定', icon: 'success' });
   } catch (error) {
     uni.showToast({
-      title: error instanceof Error ? error.message : '绑定失败',
+      title: friendlyErrorMessage(error, '绑定失败'),
       icon: 'none',
       duration: 3000,
     });

@@ -1,8 +1,10 @@
 <script setup lang="ts">
 import { onShow } from '@dcloudio/uni-app';
 import { ref } from 'vue';
-import { decryptVaultTitle } from '@/utils/crypto-flow';
-import {
+import { decryptVaultTitle } from '@/utils/crypto-flow';
+import { friendlyErrorMessage } from '@/utils/errors';
+import { ensureVaultAccess, isLoggedIn, isVaultUnlocked } from '@/utils/access';
+import {
   getProfile,
   listTrashVaultItems,
   permanentDeleteVaultItem,
@@ -14,8 +16,14 @@ const mfaEnabled = ref(false);
 const mfaCode = ref('');
 const loading = ref(false);
 
-onShow(async () => {
-  try {
+onShow(async () => {
+  if (!isLoggedIn() || !isVaultUnlocked()) {
+    items.value = [];
+    loading.value = false;
+    mfaEnabled.value = false;
+    return;
+  }
+  try {
     const profile = await getProfile();
     mfaEnabled.value = profile.mfaEnabled;
   } catch {
@@ -38,20 +46,22 @@ async function loadItems() {
     }
     items.value = rows;
   } catch (error) {
-    uni.showToast({ title: error instanceof Error ? error.message : '加载失败', icon: 'none' });
+    uni.showToast({ title: friendlyErrorMessage(error, '加载失败'), icon: 'none' });
   } finally {
     loading.value = false;
   }
 }
 
-async function handleRestore(id: string) {
-  await restoreVaultItem(id);
+async function handleRestore(id: string) {
+  if (!(await ensureVaultAccess('登录并解锁后即可恢复回收站内容。'))) return;
+  await restoreVaultItem(id);
   await loadItems();
   uni.showToast({ title: '已恢复', icon: 'success' });
 }
 
-async function handlePurge(id: string) {
-  if (mfaEnabled.value && !mfaCode.value) {
+async function handlePurge(id: string) {
+  if (!(await ensureVaultAccess('登录并解锁后即可永久删除回收站内容。'))) return;
+  if (mfaEnabled.value && !mfaCode.value) {
     uni.showToast({ title: '请输入验证码', icon: 'none' });
     return;
   }
@@ -64,7 +74,7 @@ async function handlePurge(id: string) {
         await permanentDeleteVaultItem(id, mfaCode.value || undefined);
         await loadItems();
       } catch (error) {
-        uni.showToast({ title: error instanceof Error ? error.message : '删除失败', icon: 'none' });
+        uni.showToast({ title: friendlyErrorMessage(error, '删除失败'), icon: 'none' });
       }
     },
   });

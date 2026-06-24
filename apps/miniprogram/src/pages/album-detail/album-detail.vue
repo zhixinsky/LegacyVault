@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { friendlyErrorMessage } from '@/utils/errors';
 import { onLoad, onShow, onUnload } from '@dcloudio/uni-app';
 import { getCurrentInstance, nextTick, ref, watch } from 'vue';
 import { extensionFromMime, isImageFile, isVideoFile } from '@vaultpass/types';
@@ -68,7 +69,7 @@ async function loadFiles() {
     setupThumbObservers();
   } catch (error) {
     uni.showToast({
-      title: error instanceof Error ? error.message : '加载失败',
+      title: friendlyErrorMessage(error, '加载失败'),
       icon: 'none',
     });
   } finally {
@@ -158,7 +159,7 @@ async function handlePreview(file: VaultFileItem) {
     videoPreviewPath.value = tempPath;
   } catch (error) {
     uni.showToast({
-      title: error instanceof Error ? error.message : '预览失败',
+      title: friendlyErrorMessage(error, '预览失败'),
       icon: 'none',
     });
   } finally {
@@ -200,7 +201,7 @@ function handleBatchDelete() {
         uni.showToast({ title: '已删除', icon: 'success' });
       } catch (error) {
         uni.showToast({
-          title: error instanceof Error ? error.message : '删除失败',
+          title: friendlyErrorMessage(error, '删除失败'),
           icon: 'none',
         });
       }
@@ -219,7 +220,7 @@ async function handleSetCover(file: VaultFileItem) {
     uni.showToast({ title: '封面已更新', icon: 'success' });
   } catch (error) {
     uni.showToast({
-      title: error instanceof Error ? error.message : '设置失败',
+      title: friendlyErrorMessage(error, '设置失败'),
       icon: 'none',
     });
   } finally {
@@ -239,7 +240,7 @@ function handleDelete(id: string) {
         uni.showToast({ title: '已删除', icon: 'success' });
       } catch (error) {
         uni.showToast({
-          title: error instanceof Error ? error.message : '删除失败',
+          title: friendlyErrorMessage(error, '删除失败'),
           icon: 'none',
         });
       }

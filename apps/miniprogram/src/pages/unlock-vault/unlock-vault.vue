@@ -6,6 +6,7 @@ import {
   buildRecoveredMasterPasswordPayload,
   unlockVaultWithMasterPassword,
 } from '@/utils/crypto-flow';
+import { friendlyErrorMessage } from '@/utils/errors';
 import { getProfile, heartbeat, recoverMasterPassword } from '@/utils/services';
 
 type UnlockMode = 'master' | 'recovery';
@@ -51,7 +52,7 @@ function waitForPaint(delay = 100) {
 
 function setProgress(value: number, step: number, text = '正在执行安全计算...') {
   progress.value = unlockStatus.value === 'running' ? Math.max(progress.value, value) : value;
-  currentStep.value = step;
+  currentStep.value = unlockStatus.value === 'running' ? Math.max(currentStep.value, step) : step;
   statusText.value = text;
 }
 
@@ -117,7 +118,7 @@ async function animateMasterUnlock<T>(task: Promise<T>) {
   while (Date.now() - startedAt < MASTER_UNLOCK_PROGRESS_DURATION_MS || !settled) {
     if (failed) throw failure;
 
-    const value = getTimedUnlockProgress(startedAt);
+    const value = Math.max(progress.value, getTimedUnlockProgress(startedAt));
     setProgress(value, getTimedUnlockStep(value), getTimedUnlockText(value));
     await nextTick();
     await waitForPaint(MASTER_UNLOCK_PROGRESS_TICK_MS);
@@ -255,11 +256,7 @@ async function handleUnlock() {
     errorMessage.value =
       failedAttempts.value >= 5
         ? '尝试次数过多，请稍后再试或使用恢复密钥。'
-        : error instanceof Error && error.message
-          ? error.message.includes('decrypt') || error.message.includes('解密')
-            ? '主密码错误，请重新输入'
-            : error.message
-          : '主密码错误，请重新输入';
+        : friendlyErrorMessage(error, '主密码错误，请重新输入');
     statusText.value = errorMessage.value;
   } finally {
     isUnlocking.value = false;

@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { friendlyErrorMessage } from '@/utils/errors';
 import { onLoad } from '@dcloudio/uni-app';
 import { computed, ref } from 'vue';
 import { getVaultItemTypeConfig, isManagedVaultType } from '@vaultpass/types';
@@ -46,7 +47,7 @@ async function handleSave() {
     setTimeout(() => uni.navigateBack(), 500);
   } catch (error) {
     uni.showToast({
-      title: error instanceof Error ? error.message : '保存失败',
+      title: friendlyErrorMessage(error, '保存失败'),
       icon: 'none',
     });
   } finally {
