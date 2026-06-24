@@ -28,6 +28,7 @@ async function chooseAndUpload() {
           formData: prepared.formData,
         });
         uni.showToast({ title: '图片已加密上传', icon: 'success' });
+        setTimeout(() => uni.navigateBack(), 500);
       } catch (error) {
         uni.showToast({
           title: friendlyErrorMessage(error, '上传失败'),

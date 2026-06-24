@@ -1,5 +1,11 @@
 import type { PaginatedResponse, UserProfile } from '@vaultpass/types';
-import { request, saveToken, vaultSession } from './api';
+import {
+  API_BASE_URL,
+  TOKEN_STORAGE_KEY,
+  USE_WX_CLOUD_CONTAINER,
+  WX_CLOUD_SERVICE,
+} from '../config';
+import { getDeviceId, request, saveToken, vaultSession } from './api';
 import { friendlyErrorMessage } from './errors';
 
 export interface AuthResult {
@@ -694,20 +700,34 @@ export function uploadEncryptedFile(options: {
   filePath: string;
   formData: Record<string, string | number>;
 }) {
-  const token = uni.getStorageSync('vp_access_token') as string;
+  const token = uni.getStorageSync(TOKEN_STORAGE_KEY) as string;
 
   return new Promise<VaultFileItem>((resolve, reject) => {
     uni.uploadFile({
-      url: `${import.meta.env.VITE_API_BASE_URL || 'http://localhost:3000/api/v1'}/files/upload`,
+      url: `${API_BASE_URL}/files/upload`,
       filePath: options.filePath,
       name: 'file',
       formData: options.formData as UniApp.UploadFileOption['formData'],
-      header: token ? { Authorization: `Bearer ${token}` } : {},
+      header: {
+        'X-Device-Id': getDeviceId(),
+        ...(token ? { Authorization: `Bearer ${token}` } : {}),
+        ...(USE_WX_CLOUD_CONTAINER && WX_CLOUD_SERVICE ? { 'X-WX-SERVICE': WX_CLOUD_SERVICE } : {}),
+      },
       success: (res) => {
         try {
-          const body = JSON.parse(res.data) as { code: number; message: string; data: VaultFileItem };
+          const body = res.data ? JSON.parse(res.data) as { code?: number; message?: string; data?: VaultFileItem } : null;
+          if ((res.statusCode ?? 200) >= 400) {
+            reject(new Error(friendlyErrorMessage(body?.message, `上传失败 (${res.statusCode})`)));
+            return;
+          }
+
+          if (!body) {
+            reject(new Error('上传响应为空'));
+            return;
+          }
+
           if (body.code === 0) {
-            resolve(body.data);
+            resolve(body.data as VaultFileItem);
             return;
           }
           reject(new Error(friendlyErrorMessage(body.message, '上传失败')));

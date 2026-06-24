@@ -72,11 +72,11 @@ async function handleDelete(id: string) {
       </view>
       <view v-if="loading" class="hint">加载中...</view>
       <view v-else>
-        <view v-for="item in notes" :key="item.id" class="list-item">
+        <view v-for="item in notes" :key="item.id" class="list-item" @tap="goEdit(item.id)">
           <text class="item-title">{{ item.title }}</text>
           <view class="actions">
-            <button class="btn btn-secondary btn-small" @tap="goEdit(item.id)">编辑</button>
-            <button class="btn btn-secondary btn-small" @tap="handleDelete(item.id)">删除</button>
+            <button class="btn btn-secondary btn-small" @tap.stop="goEdit(item.id)">编辑</button>
+            <button class="btn btn-secondary btn-small" @tap.stop="handleDelete(item.id)">删除</button>
           </view>
         </view>
         <text v-if="notes.length === 0" class="hint">暂无笔记</text>

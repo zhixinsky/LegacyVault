@@ -321,16 +321,23 @@ async function submitMfa() {
   position: relative;
   overflow: hidden;
   min-height: 100vh;
-  display: grid;
-  grid-template-columns: minmax(0, 1fr) 440px;
-  gap: 64px;
+  display: flex;
   align-items: center;
+  justify-content: center;
   padding: 56px clamp(24px, 6vw, 96px);
   background:
     linear-gradient(135deg, rgba(248, 251, 255, 0.42), rgba(231, 244, 255, 0.32)),
     url("https://7072-prod-d4g8kpg7x92d55205-1441616383.tcb.qcloud.la/img/webbg.webp?sign=3e4f66ed95b9227bd9e1014fb49cd623&t=1781171997");
   background-size: cover;
   background-position: center;
+}
+
+.hero {
+  position: absolute;
+  left: clamp(32px, 7vw, 112px);
+  top: clamp(40px, 10vh, 96px);
+  max-width: min(34vw, 440px);
+  pointer-events: none;
 }
 
 .hero h1 {
@@ -360,7 +367,9 @@ async function submitMfa() {
 }
 
 .login-card {
-  width: 100%;
+  position: relative;
+  z-index: 1;
+  width: min(100%, 440px);
   padding: 32px;
   border: 1px solid rgba(255, 255, 255, 0.62);
   border-radius: 24px;
@@ -477,9 +486,15 @@ input:focus {
 
 @media (max-width: 860px) {
   .login-page {
+    display: grid;
     grid-template-columns: 1fr;
     gap: 28px;
     padding: 32px 18px;
+  }
+
+  .hero {
+    position: static;
+    max-width: none;
   }
 
   .hero h1 {

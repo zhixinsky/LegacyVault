@@ -12,6 +12,16 @@ export interface RichNotePayload {
   content?: string;
 }
 
+export function normalizeRichNotePayload(value: unknown): RichNotePayload {
+  if (typeof value === 'string') {
+    return { content: value };
+  }
+  if (!value || typeof value !== 'object') {
+    return { content: '' };
+  }
+  return value as RichNotePayload;
+}
+
 export function richNoteToPlainText(payload: RichNotePayload) {
   if (payload.content) return payload.content;
   if (!payload.doc) return '';

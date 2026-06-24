@@ -6,6 +6,7 @@ import { decryptVaultPayload, decryptVaultTitle, encryptVaultItemPayload } from 
 import {
   getRichNoteFeatureSummary,
   isMiniEditableRichNote,
+  normalizeRichNotePayload,
   plainTextToRichNotePayload,
   richNoteToPlainText,
   type RichNotePayload,
@@ -31,7 +32,7 @@ async function loadItem() {
   try {
     const item = await getVaultItem(editId.value);
     title.value = await decryptVaultTitle(item.titleCiphertext);
-    const payload = await decryptVaultPayload<RichNotePayload>(item.encryptedPayload);
+    const payload = normalizeRichNotePayload(await decryptVaultPayload<RichNotePayload>(item.encryptedPayload));
     content.value = richNoteToPlainText(payload);
     richFeatures.value = getRichNoteFeatureSummary(payload);
     readonlyPreview.value = !isMiniEditableRichNote(payload);
