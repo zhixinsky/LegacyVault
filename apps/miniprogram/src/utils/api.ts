@@ -39,6 +39,7 @@ interface WxCloudApi {
     method: string;
     data?: unknown;
     header?: RequestHeader;
+    responseType?: 'arraybuffer' | 'text';
     success: (res: { statusCode?: number; data: T }) => void;
     fail: (error: { errMsg?: string }) => void;
   }): void;
@@ -423,18 +424,67 @@ export async function decryptText(ciphertext: string) {
   }
 }
 
+function callCloudContainerBinary(
+  path: string,
+  token: string,
+  mfaCode?: string,
+): Promise<ArrayBuffer> | undefined {
+  const cloud = getWxCloud();
+  if (!cloud) {
+    return undefined;
+  }
+  if (!WX_CLOUD_ENV_ID || !WX_CLOUD_SERVICE) {
+    return Promise.reject(new Error('未配置微信云托管环境或服务名'));
+  }
+
+  if (!wxCloudInitialized) {
+    cloud.init({ env: WX_CLOUD_ENV_ID, traceUser: true });
+    wxCloudInitialized = true;
+  }
+
+  return new Promise((resolve, reject) => {
+    cloud.callContainer<ArrayBuffer>({
+      config: { env: WX_CLOUD_ENV_ID },
+      path: `/api/v1${path}`,
+      method: 'GET',
+      responseType: 'arraybuffer',
+      header: {
+        'X-Device-Id': getDeviceId(),
+        'X-WX-SERVICE': WX_CLOUD_SERVICE,
+        ...(token ? { Authorization: `Bearer ${token}` } : {}),
+        ...(mfaCode ? { 'X-Mfa-Code': mfaCode } : {}),
+      },
+      success: (res) => {
+        if ((res.statusCode ?? 200) >= 400) {
+          reject(new Error(`下载失败 (${res.statusCode})`));
+          return;
+        }
+        resolve(res.data);
+      },
+      fail: (error) => reject(new Error(friendlyErrorMessage(error.errMsg, '下载失败'))),
+    });
+  });
+}
+
 let contactVaultKeyMemory: Uint8Array | null = null;
 let contactSessionIdMemory = '';
 
 export function downloadEncryptedFile(fileId: string, mfaCode?: string) {
   const token = uni.getStorageSync(TOKEN_STORAGE_KEY) as string;
+  const path = `/files/${fileId}/download`;
+  const cloudDownload = callCloudContainerBinary(path, token, mfaCode);
+  if (cloudDownload) {
+    return cloudDownload;
+  }
 
   return new Promise<ArrayBuffer>((resolve, reject) => {
     uni.request({
-      url: `${API_BASE_URL}/files/${fileId}/download`,
+      url: `${API_BASE_URL}${path}`,
       method: 'GET',
       responseType: 'arraybuffer',
       header: {
+        'X-Device-Id': getDeviceId(),
+        ...(USE_WX_CLOUD_CONTAINER && WX_CLOUD_SERVICE ? { 'X-WX-SERVICE': WX_CLOUD_SERVICE } : {}),
         ...(token ? { Authorization: `Bearer ${token}` } : {}),
         ...(mfaCode ? { 'X-Mfa-Code': mfaCode } : {}),
       },
@@ -451,11 +501,21 @@ export function downloadEncryptedFile(fileId: string, mfaCode?: string) {
 }
 
 export function downloadContactVaultFile(sessionId: string, fileId: string) {
+  const path = `/contact-takeover/${sessionId}/vault/files/${fileId}/download`;
+  const cloudDownload = callCloudContainerBinary(path, '', undefined);
+  if (cloudDownload) {
+    return cloudDownload;
+  }
+
   return new Promise<ArrayBuffer>((resolve, reject) => {
     uni.request({
-      url: `${API_BASE_URL}/contact-takeover/${sessionId}/vault/files/${fileId}/download`,
+      url: `${API_BASE_URL}${path}`,
       method: 'GET',
       responseType: 'arraybuffer',
+      header: {
+        'X-Device-Id': getDeviceId(),
+        ...(USE_WX_CLOUD_CONTAINER && WX_CLOUD_SERVICE ? { 'X-WX-SERVICE': WX_CLOUD_SERVICE } : {}),
+      },
       success: (res) => {
         if (res.statusCode >= 400) {
           reject(new Error(`下载失败 (${res.statusCode})`));
