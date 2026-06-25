@@ -604,28 +604,29 @@ button::after {
 
 .security-card {
   display: flex;
-  align-items: center;
-  gap: 22rpx;
-  margin-top: 34rpx;
-  padding: 26rpx 24rpx;
-  border-radius: 20rpx;
-  background: #eef6ff;
+  align-items: flex-start;
+  gap: 14rpx;
+  margin-top: 28rpx;
+  padding: 0 4rpx;
+  background: transparent;
 }
 
 .security-icon {
   display: flex;
-  width: 72rpx;
-  height: 72rpx;
-  flex: 0 0 72rpx;
+  width: 34rpx;
+  height: 34rpx;
+  flex: 0 0 34rpx;
   align-items: center;
   justify-content: center;
-  border-radius: 36rpx;
-  background: rgba(30, 77, 255, 0.12);
+  margin-top: 2rpx;
+  border-radius: 0;
+  background: transparent;
+  opacity: 0.42;
 }
 
 .security-icon image {
-  width: 42rpx;
-  height: 42rpx;
+  width: 30rpx;
+  height: 30rpx;
 }
 
 .security-copy {
@@ -635,15 +636,15 @@ button::after {
 
 .security-title {
   display: block;
-  color: #0b1f4d;
-  font-size: 26rpx;
-  font-weight: 700;
+  color: #7a879a;
+  font-size: 23rpx;
+  font-weight: 500;
 }
 
 .security-swiper {
   width: 100%;
-  height: 76rpx;
-  margin-top: 10rpx;
+  height: 58rpx;
+  margin-top: 4rpx;
 }
 
 .security-slide {
@@ -653,9 +654,9 @@ button::after {
 
 .security-text {
   display: block;
-  color: #64748b;
-  font-size: 24rpx;
-  line-height: 1.48;
+  color: #9aa6b8;
+  font-size: 22rpx;
+  line-height: 1.45;
   white-space: normal;
 }
 
